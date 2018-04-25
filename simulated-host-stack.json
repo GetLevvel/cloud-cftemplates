@@ -1,0 +1,792 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Creates a VPC and Windows Image to Simulate an on-premise environment",
+    "Parameters": {
+        "key": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        }
+    },
+    "Mappings": {
+        "Region2Examples": {
+            "us-east-1": {
+                "Examples": "https://s3.amazonaws.com/cloudformation-examples-us-east-1"
+            },
+            "us-west-2": {
+                "Examples": "https://s3-us-west-2.amazonaws.com/cloudformation-examples-us-west-2"
+            },
+            "us-west-1": {
+                "Examples": "https://s3-us-west-1.amazonaws.com/cloudformation-examples-us-west-1"
+            },
+            "eu-west-1": {
+                "Examples": "https://s3-eu-west-1.amazonaws.com/cloudformation-examples-eu-west-1"
+            },
+            "eu-west-2": {
+                "Examples": "https://s3-eu-west-2.amazonaws.com/cloudformation-examples-eu-west-2"
+            },
+            "eu-west-3": {
+                "Examples": "https://s3-eu-west-3.amazonaws.com/cloudformation-examples-eu-west-3"
+            },
+            "eu-central-1": {
+                "Examples": "https://s3-eu-central-1.amazonaws.com/cloudformation-examples-eu-central-1"
+            },
+            "ap-southeast-1": {
+                "Examples": "https://s3-ap-southeast-1.amazonaws.com/cloudformation-examples-ap-southeast-1"
+            },
+            "ap-northeast-1": {
+                "Examples": "https://s3-ap-northeast-1.amazonaws.com/cloudformation-examples-ap-northeast-1"
+            },
+            "ap-northeast-2": {
+                "Examples": "https://s3-ap-northeast-2.amazonaws.com/cloudformation-examples-ap-northeast-2"
+            },
+            "ap-northeast-3": {
+                "Examples": "https://s3-ap-northeast-3.amazonaws.com/cloudformation-examples-ap-northeast-3"
+            },
+            "ap-southeast-2": {
+                "Examples": "https://s3-ap-southeast-2.amazonaws.com/cloudformation-examples-ap-southeast-2"
+            },
+            "ap-south-1": {
+                "Examples": "https://s3-ap-south-1.amazonaws.com/cloudformation-examples-ap-south-1"
+            },
+            "us-east-2": {
+                "Examples": "https://s3-us-east-2.amazonaws.com/cloudformation-examples-us-east-2"
+            },
+            "ca-central-1": {
+                "Examples": "https://s3-ca-central-1.amazonaws.com/cloudformation-examples-ca-central-1"
+            },
+            "sa-east-1": {
+                "Examples": "https://s3-sa-east-1.amazonaws.com/cloudformation-examples-sa-east-1"
+            },
+            "cn-north-1": {
+                "Examples": "https://s3.cn-north-1.amazonaws.com.cn/cloudformation-examples-cn-north-1"
+            },
+            "cn-northwest-1": {
+                "Examples": "https://s3.cn-northwest-1.amazonaws.com.cn/cloudformation-examples-cn-northwest-1"
+            }
+        }
+    },
+    "Resources": {
+        "SHVPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": "10.0.0.0/16",
+                "Tags": [
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "AWS::StackId"
+                        }
+                    }
+                ]
+            }
+        },
+        "SHSubnet": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "SHVPC"
+                },
+                "CidrBlock": "10.0.0.0/24",
+                "Tags": [
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "AWS::StackId"
+                        }
+                    }
+                ]
+            }
+        },
+        "SHInternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "AWS::StackId"
+                        }
+                    }
+                ]
+            }
+        },
+        "SHAttachGateway": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "SHVPC"
+                },
+                "InternetGatewayId": {
+                    "Ref": "SHInternetGateway"
+                }
+            }
+        },
+        "SHRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "SHVPC"
+                },
+                "Tags": [
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "AWS::StackId"
+                        }
+                    }
+                ]
+            }
+        },
+        "Route": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": "SHAttachGateway",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "SHRouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "SHInternetGateway"
+                }
+            }
+        },
+        "SHSubnetRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SHSubnet"
+                },
+                "RouteTableId": {
+                    "Ref": "SHRouteTable"
+                }
+            }
+        },
+        "SHNetworkAcl": {
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "SHVPC"
+                },
+                "Tags": [
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "AWS::StackId"
+                        }
+                    }
+                ]
+            }
+        },
+        "SHInboundRDPNetworkAclEntry": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "SHNetworkAcl"
+                },
+                "RuleNumber": "101",
+                "Protocol": "6",
+                "RuleAction": "allow",
+                "Egress": "false",
+                "CidrBlock": "0.0.0.0/0",
+                "PortRange": {
+                    "From": "3389",
+                    "To": "3389"
+                }
+            }
+        },
+        "SHInboundResponsePortsNetworkAclEntry": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "SHNetworkAcl"
+                },
+                "RuleNumber": "102",
+                "Protocol": "6",
+                "RuleAction": "allow",
+                "Egress": "false",
+                "CidrBlock": "0.0.0.0/0",
+                "PortRange": {
+                    "From": "1024",
+                    "To": "65535"
+                }
+            }
+        },
+        "SHOutBoundResponsePortsNetworkAclEntry": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "SHNetworkAcl"
+                },
+                "RuleNumber": "102",
+                "Protocol": "6",
+                "RuleAction": "allow",
+                "Egress": "true",
+                "CidrBlock": "0.0.0.0/0",
+                "PortRange": {
+                    "From": "1024",
+                    "To": "65535"
+                }
+            }
+        },
+        "SHSubnetNetworkAclAssociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SHSubnet"
+                },
+                "NetworkAclId": {
+                    "Ref": "SHNetworkAcl"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "38692dfb-ef2e-4a52-9868-ca7594675f61"
+                }
+            }
+        },
+        "SHIPAddress": {
+            "Type": "AWS::EC2::EIP",
+            "DependsOn": "SHAttachGateway",
+            "Properties": {
+                "Domain": "vpc",
+                "InstanceId": {
+                    "Ref": "win1Instance"
+                }
+            }
+        },
+        "win1SecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Simulated Host RDP Access",
+                "VpcId": {
+                    "Ref": "SHVPC"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "3389",
+                        "ToPort": "3389",
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]
+            }
+        },
+        "win1Instance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": "ami-f3dcbc8b",
+                "InstanceType": "t2.medium",
+                "IamInstanceProfile": {
+                    "Ref": "win1InstanceProfile"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "Windows Server 1 (",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    ")"
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "KeyName": {
+                    "Ref": "key"
+                },
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/sda1",
+                        "Ebs": {
+                            "VolumeSize": "30",
+                            "DeleteOnTermination": "true",
+                            "VolumeType": "gp2"
+                        }
+                    }
+                ],
+                "NetworkInterfaces": [
+                    {
+                        "AssociatePublicIpAddress": "true",
+                        "DeviceIndex": "0",
+                        "GroupSet": [
+                            {
+                                "Ref": "win1SecurityGroup"
+                            }
+                        ],
+                        "SubnetId": {
+                            "Ref": "SHSubnet"
+                        }
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "<script>\n",
+                                "echo function Shortcut >> %temp%\\format-disk2-download.ps1\n",
+                                "echo { >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   param([string]$name, [string]$path) >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   $WshShell = New-Object -ComObject WScript.Shell >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   $Shortcut = $WshShell.CreateShortcut(\"$Home\\Desktop\\$name\") >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   $Shortcut.TargetPath = $path >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   $Shortcut.Save() >> %temp%\\format-disk2-download.ps1\n",
+                                "echo } >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $client = new-object System.Net.WebClient >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $client.DownloadFile(\"https://s3.amazonaws.com/aws-cli/AWSCLI64.msi\",\"${env:temp}\\AWSCLI64.msi\") >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Start-Process -Wait -FilePath \"%temp%\\AWSCLI64.msi\" -ArgumentList /qb >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $client = new-object System.Net.WebClient >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $client.DownloadFile(\"https://download.mozilla.org/?product=firefox-latest&os=win&lang=en-US\",\"${env:temp}\\firefox.exe\") >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Start-Process -Wait -FilePath \"${env:TEMP}\\firefox.exe\" -ArgumentList \"-ms\" >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Shortcut \"Disk Management.lnk\" \"diskmgmt.msc\" >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Shortcut \"iSCSI Initiator.lnk\" \"iscsicpl.exe\" >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Get-Disk ^| Where partitionstyle -eq 'RAW' ^| Initialize-Disk -PartitionStyle MBR -PassThru ^| New-Partition -AssignDriveLetter -UseMaximumSize ^| Format-Volume -FileSystem NTFS -NewFileSystemLabel \"Data\" -Confirm:$false >> %temp%\\format-disk2-download.ps1\n",
+                                "echo foreach ($_ in 5..200){ d:\\ >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $a = Get-Random -Minimum 1 -Maximum 99999 >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $a = $a.ToString(\"00000\") >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Read-S3Object -BucketName aft-vbi-pds -Key bin-images/\"$a\".jpg -File d:\\\"$a\".jpg >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $i++ >> %temp%\\format-disk2-download.ps1\n",
+                                "echo } >> %temp%\\format-disk2-download.ps1\n",
+                                "powershell -ExecutionPolicy Bypass -Command %temp%\\format-disk2-download.ps1\n",
+                                "</script>\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "e29513cb-fb42-4363-bba3-7fcb03226e13"
+                }
+            }
+        },
+        "windowsDisk2Attach": {
+            "Type": "AWS::EC2::VolumeAttachment",
+            "Properties": {
+                "Device": "/dev/xvdb",
+                "InstanceId": {
+                    "Ref": "win1Instance"
+                },
+                "VolumeId": {
+                    "Ref": "windowsDisk2"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "60edca5d-938e-4fad-ba09-7c3df3d1ad50"
+                }
+            }
+        },
+        "windowsDisk2": {
+            "Type": "AWS::EC2::Volume",
+            "Properties": {
+                "AvailabilityZone": {
+                    "Fn::GetAtt": [
+                        "win1Instance",
+                        "AvailabilityZone"
+                    ]
+                },
+                "Size": "1",
+                "VolumeType": "gp2",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "Windows Server 1 Disk 2 (",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    ")"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "78fa820a-f82f-4ac3-94d2-adfed7cda089"
+                }
+            }
+        },
+        "win1InstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "win1IamRole"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "f9b7a1dc-f82f-4237-825a-d38a5d6ffc58"
+                }
+            }
+        },
+        "win1IamRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "8c88ae09-856b-4c3d-9a83-f60c83fdb912"
+                }
+            }
+        },
+        "win1RolePolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:ListBucket"
+                            ],
+                            "Resource": [
+                                "arn:aws:s3:::aft-vbi-pds"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:PutObject",
+                                "s3:GetObject",
+                                "s3:DeleteObject"
+                            ],
+                            "Resource": [
+                                "arn:aws:s3:::aft-vbi-pds/*"
+                            ]
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "PolicyName": "policy",
+                "Roles": [
+                    {
+                        "Ref": "win1IamRole"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "a30d59fc-8a10-4537-93cf-51aec0e731ec"
+                }
+            }
+        }
+    },
+    "Outputs": {},
+    "Metadata": {
+        "AWS::CloudFormation::Designer": {
+            "8c88ae09-856b-4c3d-9a83-f60c83fdb912": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 60,
+                    "y": 840
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "a30d59fc-8a10-4537-93cf-51aec0e731ec": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 840
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "8c88ae09-856b-4c3d-9a83-f60c83fdb912"
+                ]
+            },
+            "f9b7a1dc-f82f-4237-825a-d38a5d6ffc58": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 300,
+                    "y": 840
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "8c88ae09-856b-4c3d-9a83-f60c83fdb912"
+                ]
+            },
+            "1c91eb31-b2a3-4bd9-97e3-f0172a07031f": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 420,
+                    "y": 840
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "9d1064ee-7954-428e-9882-03ca7e49d3d4": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 540,
+                    "y": 840
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "1c91eb31-b2a3-4bd9-97e3-f0172a07031f"
+                ]
+            },
+            "4f9fb78d-aa44-4402-b7b7-56127261b290": {
+                "size": {
+                    "width": 780,
+                    "height": 690
+                },
+                "position": {
+                    "x": 60,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": [
+                    "d9999782-909f-4a33-a762-f17576024f97",
+                    "fef0a893-41c8-4ff6-bbe1-ad5139cd6735",
+                    "5225f9be-20fe-4897-bf31-68735ed2c3ab",
+                    "21b0f5bf-ae20-4717-a01a-81dec8e2a297"
+                ]
+            },
+            "d9999782-909f-4a33-a762-f17576024f97": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 700,
+                    "y": 430
+                },
+                "z": 2,
+                "parent": "4f9fb78d-aa44-4402-b7b7-56127261b290",
+                "embeds": [],
+                "iscontainedinside": [
+                    "4f9fb78d-aa44-4402-b7b7-56127261b290"
+                ]
+            },
+            "fef0a893-41c8-4ff6-bbe1-ad5139cd6735": {
+                "size": {
+                    "width": 330,
+                    "height": 330
+                },
+                "position": {
+                    "x": 90,
+                    "y": 150
+                },
+                "z": 2,
+                "parent": "4f9fb78d-aa44-4402-b7b7-56127261b290",
+                "embeds": [
+                    "98acb7a3-8c4f-4c39-ace0-93180018ab4e",
+                    "313593a7-00a1-4b9c-95fc-62da45d38139",
+                    "a5de9ced-4b45-4580-84f3-e0cf867f8afd"
+                ],
+                "iscontainedinside": [
+                    "4f9fb78d-aa44-4402-b7b7-56127261b290"
+                ]
+            },
+            "98acb7a3-8c4f-4c39-ace0-93180018ab4e": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 120,
+                    "y": 210
+                },
+                "z": 3,
+                "parent": "fef0a893-41c8-4ff6-bbe1-ad5139cd6735",
+                "embeds": [],
+                "iscontainedinside": [
+                    "fef0a893-41c8-4ff6-bbe1-ad5139cd6735"
+                ]
+            },
+            "313593a7-00a1-4b9c-95fc-62da45d38139": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 240,
+                    "y": 210
+                },
+                "z": 3,
+                "parent": "fef0a893-41c8-4ff6-bbe1-ad5139cd6735",
+                "embeds": [],
+                "iscontainedinside": [
+                    "fef0a893-41c8-4ff6-bbe1-ad5139cd6735"
+                ]
+            },
+            "a5de9ced-4b45-4580-84f3-e0cf867f8afd": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 120,
+                    "y": 330
+                },
+                "z": 3,
+                "parent": "fef0a893-41c8-4ff6-bbe1-ad5139cd6735",
+                "embeds": [],
+                "iscontainedinside": [
+                    "fef0a893-41c8-4ff6-bbe1-ad5139cd6735"
+                ]
+            },
+            "5225f9be-20fe-4897-bf31-68735ed2c3ab": {
+                "size": {
+                    "width": 150,
+                    "height": 150
+                },
+                "position": {
+                    "x": 480,
+                    "y": 450
+                },
+                "z": 2,
+                "parent": "4f9fb78d-aa44-4402-b7b7-56127261b290",
+                "embeds": [],
+                "iscontainedinside": [
+                    "4f9fb78d-aa44-4402-b7b7-56127261b290"
+                ]
+            },
+            "055a112b-e03f-41ab-865f-5ff5d477461e": {
+                "source": {
+                    "id": "4f9fb78d-aa44-4402-b7b7-56127261b290"
+                },
+                "target": {
+                    "id": "1c91eb31-b2a3-4bd9-97e3-f0172a07031f"
+                }
+            },
+            "21b0f5bf-ae20-4717-a01a-81dec8e2a297": {
+                "size": {
+                    "width": 240,
+                    "height": 240
+                },
+                "position": {
+                    "x": 480,
+                    "y": 150
+                },
+                "z": 2,
+                "parent": "4f9fb78d-aa44-4402-b7b7-56127261b290",
+                "embeds": [
+                    "e29513cb-fb42-4363-bba3-7fcb03226e13"
+                ],
+                "iscontainedinside": [
+                    "4f9fb78d-aa44-4402-b7b7-56127261b290"
+                ]
+            },
+            "e29513cb-fb42-4363-bba3-7fcb03226e13": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 510,
+                    "y": 210
+                },
+                "z": 3,
+                "parent": "21b0f5bf-ae20-4717-a01a-81dec8e2a297",
+                "embeds": [],
+                "iscontainedinside": [
+                    "21b0f5bf-ae20-4717-a01a-81dec8e2a297"
+                ]
+            },
+            "78fa820a-f82f-4ac3-94d2-adfed7cda089": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 660,
+                    "y": 840
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "60edca5d-938e-4fad-ba09-7c3df3d1ad50": {
+                "source": {
+                    "id": "78fa820a-f82f-4ac3-94d2-adfed7cda089"
+                },
+                "target": {
+                    "id": "e29513cb-fb42-4363-bba3-7fcb03226e13"
+                }
+            },
+            "68db6892-c13f-46de-9572-767e0c5e1a03": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 780,
+                    "y": 840
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "e29513cb-fb42-4363-bba3-7fcb03226e13"
+                ],
+                "dependson": [
+                    "055a112b-e03f-41ab-865f-5ff5d477461e"
+                ]
+            },
+            "38692dfb-ef2e-4a52-9868-ca7594675f61": {
+                "source": {
+                    "id": "fef0a893-41c8-4ff6-bbe1-ad5139cd6735"
+                },
+                "target": {
+                    "id": "21b0f5bf-ae20-4717-a01a-81dec8e2a297"
+                }
+            },
+            "00058cfb-5784-4424-b84a-dde3fdc282b8": {
+                "source": {
+                    "id": "5225f9be-20fe-4897-bf31-68735ed2c3ab"
+                },
+                "target": {
+                    "id": "21b0f5bf-ae20-4717-a01a-81dec8e2a297"
+                }
+            }
+        }
+    }
+}
