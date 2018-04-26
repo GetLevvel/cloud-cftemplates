@@ -2,7 +2,11 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Creates a VPC and Windows Image to Simulate an on-premise environment",
     "Parameters": {
-        "key": {
+        "MasterStackName": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "String",
+        },
+        "EC2Key": {
             "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
             "Type": "AWS::EC2::KeyPair::KeyName",
             "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
@@ -298,7 +302,7 @@
                     }
                 ],
                 "KeyName": {
-                    "Ref": "key"
+                    "Ref": "EC2Key"
                 },
                 "BlockDeviceMappings": [
                     {
@@ -359,11 +363,6 @@
                         ]
                     }
                 }
-            },
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "e29513cb-fb42-4363-bba3-7fcb03226e13"
-                }
             }
         },
         "windowsDisk2Attach": {
@@ -375,11 +374,6 @@
                 },
                 "VolumeId": {
                     "Ref": "windowsDisk2"
-                }
-            },
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "60edca5d-938e-4fad-ba09-7c3df3d1ad50"
                 }
             }
         },
@@ -411,11 +405,6 @@
                         }
                     }
                 ]
-            },
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "78fa820a-f82f-4ac3-94d2-adfed7cda089"
-                }
             }
         },
         "win1InstanceProfile": {
@@ -427,11 +416,6 @@
                         "Ref": "win1IamRole"
                     }
                 ]
-            },
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "f9b7a1dc-f82f-4237-825a-d38a5d6ffc58"
-                }
             }
         },
         "win1IamRole": {
@@ -452,11 +436,6 @@
                         }
                     ],
                     "Version": "2012-10-17"
-                }
-            },
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "8c88ae09-856b-4c3d-9a83-f60c83fdb912"
                 }
             }
         },
@@ -494,299 +473,109 @@
                         "Ref": "win1IamRole"
                     }
                 ]
-            },
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "a30d59fc-8a10-4537-93cf-51aec0e731ec"
-                }
             }
         }
     },
-    "Outputs": {},
-    "Metadata": {
-        "AWS::CloudFormation::Designer": {
-            "8c88ae09-856b-4c3d-9a83-f60c83fdb912": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 60,
-                    "y": 840
-                },
-                "z": 1,
-                "embeds": []
-            },
-            "a30d59fc-8a10-4537-93cf-51aec0e731ec": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 180,
-                    "y": 840
-                },
-                "z": 1,
-                "embeds": [],
-                "isassociatedwith": [
-                    "8c88ae09-856b-4c3d-9a83-f60c83fdb912"
-                ]
-            },
-            "f9b7a1dc-f82f-4237-825a-d38a5d6ffc58": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 300,
-                    "y": 840
-                },
-                "z": 1,
-                "embeds": [],
-                "isassociatedwith": [
-                    "8c88ae09-856b-4c3d-9a83-f60c83fdb912"
-                ]
-            },
-            "1c91eb31-b2a3-4bd9-97e3-f0172a07031f": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 420,
-                    "y": 840
-                },
-                "z": 1,
-                "embeds": []
-            },
-            "9d1064ee-7954-428e-9882-03ca7e49d3d4": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 540,
-                    "y": 840
-                },
-                "z": 1,
-                "embeds": [],
-                "isassociatedwith": [
-                    "1c91eb31-b2a3-4bd9-97e3-f0172a07031f"
-                ]
-            },
-            "4f9fb78d-aa44-4402-b7b7-56127261b290": {
-                "size": {
-                    "width": 780,
-                    "height": 690
-                },
-                "position": {
-                    "x": 60,
-                    "y": 90
-                },
-                "z": 1,
-                "embeds": [
-                    "d9999782-909f-4a33-a762-f17576024f97",
-                    "fef0a893-41c8-4ff6-bbe1-ad5139cd6735",
-                    "5225f9be-20fe-4897-bf31-68735ed2c3ab",
-                    "21b0f5bf-ae20-4717-a01a-81dec8e2a297"
-                ]
-            },
-            "d9999782-909f-4a33-a762-f17576024f97": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 700,
-                    "y": 430
-                },
-                "z": 2,
-                "parent": "4f9fb78d-aa44-4402-b7b7-56127261b290",
-                "embeds": [],
-                "iscontainedinside": [
-                    "4f9fb78d-aa44-4402-b7b7-56127261b290"
-                ]
-            },
-            "fef0a893-41c8-4ff6-bbe1-ad5139cd6735": {
-                "size": {
-                    "width": 330,
-                    "height": 330
-                },
-                "position": {
-                    "x": 90,
-                    "y": 150
-                },
-                "z": 2,
-                "parent": "4f9fb78d-aa44-4402-b7b7-56127261b290",
-                "embeds": [
-                    "98acb7a3-8c4f-4c39-ace0-93180018ab4e",
-                    "313593a7-00a1-4b9c-95fc-62da45d38139",
-                    "a5de9ced-4b45-4580-84f3-e0cf867f8afd"
-                ],
-                "iscontainedinside": [
-                    "4f9fb78d-aa44-4402-b7b7-56127261b290"
-                ]
-            },
-            "98acb7a3-8c4f-4c39-ace0-93180018ab4e": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 120,
-                    "y": 210
-                },
-                "z": 3,
-                "parent": "fef0a893-41c8-4ff6-bbe1-ad5139cd6735",
-                "embeds": [],
-                "iscontainedinside": [
-                    "fef0a893-41c8-4ff6-bbe1-ad5139cd6735"
-                ]
-            },
-            "313593a7-00a1-4b9c-95fc-62da45d38139": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 240,
-                    "y": 210
-                },
-                "z": 3,
-                "parent": "fef0a893-41c8-4ff6-bbe1-ad5139cd6735",
-                "embeds": [],
-                "iscontainedinside": [
-                    "fef0a893-41c8-4ff6-bbe1-ad5139cd6735"
-                ]
-            },
-            "a5de9ced-4b45-4580-84f3-e0cf867f8afd": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 120,
-                    "y": 330
-                },
-                "z": 3,
-                "parent": "fef0a893-41c8-4ff6-bbe1-ad5139cd6735",
-                "embeds": [],
-                "iscontainedinside": [
-                    "fef0a893-41c8-4ff6-bbe1-ad5139cd6735"
-                ]
-            },
-            "5225f9be-20fe-4897-bf31-68735ed2c3ab": {
-                "size": {
-                    "width": 150,
-                    "height": 150
-                },
-                "position": {
-                    "x": 480,
-                    "y": 450
-                },
-                "z": 2,
-                "parent": "4f9fb78d-aa44-4402-b7b7-56127261b290",
-                "embeds": [],
-                "iscontainedinside": [
-                    "4f9fb78d-aa44-4402-b7b7-56127261b290"
-                ]
-            },
-            "055a112b-e03f-41ab-865f-5ff5d477461e": {
-                "source": {
-                    "id": "4f9fb78d-aa44-4402-b7b7-56127261b290"
-                },
-                "target": {
-                    "id": "1c91eb31-b2a3-4bd9-97e3-f0172a07031f"
-                }
-            },
-            "21b0f5bf-ae20-4717-a01a-81dec8e2a297": {
-                "size": {
-                    "width": 240,
-                    "height": 240
-                },
-                "position": {
-                    "x": 480,
-                    "y": 150
-                },
-                "z": 2,
-                "parent": "4f9fb78d-aa44-4402-b7b7-56127261b290",
-                "embeds": [
-                    "e29513cb-fb42-4363-bba3-7fcb03226e13"
-                ],
-                "iscontainedinside": [
-                    "4f9fb78d-aa44-4402-b7b7-56127261b290"
-                ]
-            },
-            "e29513cb-fb42-4363-bba3-7fcb03226e13": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 510,
-                    "y": 210
-                },
-                "z": 3,
-                "parent": "21b0f5bf-ae20-4717-a01a-81dec8e2a297",
-                "embeds": [],
-                "iscontainedinside": [
-                    "21b0f5bf-ae20-4717-a01a-81dec8e2a297"
-                ]
-            },
-            "78fa820a-f82f-4ac3-94d2-adfed7cda089": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 660,
-                    "y": 840
-                },
-                "z": 1,
-                "embeds": []
-            },
-            "60edca5d-938e-4fad-ba09-7c3df3d1ad50": {
-                "source": {
-                    "id": "78fa820a-f82f-4ac3-94d2-adfed7cda089"
-                },
-                "target": {
-                    "id": "e29513cb-fb42-4363-bba3-7fcb03226e13"
-                }
-            },
-            "68db6892-c13f-46de-9572-767e0c5e1a03": {
-                "size": {
-                    "width": 60,
-                    "height": 60
-                },
-                "position": {
-                    "x": 780,
-                    "y": 840
-                },
-                "z": 1,
-                "embeds": [],
-                "isassociatedwith": [
-                    "e29513cb-fb42-4363-bba3-7fcb03226e13"
-                ],
-                "dependson": [
-                    "055a112b-e03f-41ab-865f-5ff5d477461e"
-                ]
-            },
-            "38692dfb-ef2e-4a52-9868-ca7594675f61": {
-                "source": {
-                    "id": "fef0a893-41c8-4ff6-bbe1-ad5139cd6735"
-                },
-                "target": {
-                    "id": "21b0f5bf-ae20-4717-a01a-81dec8e2a297"
-                }
-            },
-            "00058cfb-5784-4424-b84a-dde3fdc282b8": {
-                "source": {
-                    "id": "5225f9be-20fe-4897-bf31-68735ed2c3ab"
-                },
-                "target": {
-                    "id": "21b0f5bf-ae20-4717-a01a-81dec8e2a297"
-                }
-            }
-        }
+    "Outputs": {
+      "SHVPC" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHVPC" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHVPC" }}
+      },
+      "SHSubnet" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHSubnet" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHSubnet" }}
+      },
+      "SHInternetGateway" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHInternetGateway" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHInternetGateway" }}
+      },
+      "SHAttachGateway" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHAttachGateway" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHAttachGateway" }}
+      },
+      "SHRouteTable" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHRouteTable" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHRouteTable" }}
+      },
+      "Route" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "Route" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-Route" }}
+      },
+      "SHSubnetRouteTableAssociation" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHSubnetRouteTableAssociation" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHSubnetRouteTableAssociation" }}
+      },
+      "SHNetworkAcl" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHNetworkAcl" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHNetworkAcl" }}
+      },
+      "SHInboundRDPNetworkAclEntry" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHInboundRDPNetworkAclEntry" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHInboundRDPNetworkAclEntry" }}
+      },
+      "SHInboundResponsePortsNetworkAclEntry" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHInboundResponsePortsNetworkAclEntry" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHInboundResponsePortsNetworkAclEntry" }}
+      },
+      "SHOutBoundResponsePortsNetworkAclEntry" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHOutBoundResponsePortsNetworkAclEntry" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHOutBoundResponsePortsNetworkAclEntry" }}
+      },
+      "SHSubnetNetworkAclAssociation" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHSubnetNetworkAclAssociation" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHSubnetNetworkAclAssociation" }}
+      },
+      "SHIPAddress" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "SHIPAddress" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHIPAddress" }}
+      },
+      "win1SecurityGroup" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "win1SecurityGroup" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1SecurityGroup" }}
+      },
+      "win1Instance" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "win1Instance" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1Instance" }}
+      },
+      "windowsDisk2Attach" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "windowsDisk2Attach" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-windowsDisk2Attach" }}
+      },
+      "windowsDisk2" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "windowsDisk2" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-windowsDisk2" }}
+      },
+      "win1InstanceProfile" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "win1InstanceProfile" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1InstanceProfile" }}
+      },
+      "win1IamRole" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "win1IamRole" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1IamRole" }}
+      },
+      "win1RolePolicy" : {
+        "Description" : "policy for the windows box",
+        "Value" : { "Ref": "win1RolePolicy" },
+        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1RolePolicy" }}
+      }
     }
 }
