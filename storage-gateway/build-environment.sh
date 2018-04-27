@@ -53,7 +53,7 @@ fi
 
 aws ${AWSPROFILE:+--profile $AWSPROFILE}cloudformation package --template-file  simulated-host-stack.json --s3-bucket $BUCKET --output-template-file simulated-host-stack-packaged.json
 aws ${AWSPROFILE:+--profile $AWSPROFILE}s3 mv ./simulated-host-stack-packaged.json  s3://${BUCKET}/
-aws ${AWSPROFILE:+--profile $AWSPROFILE} --region $SIMHOSTREGION cloudformation create-stack --stack-name ${MASTERSTACKNAME}-SimulatedOnPremises --capabilities CAPABILITY_NAMED_IAM --template-url https://s3.amazonaws.com/${BUCKET}/simulated-host-stack-packaged.json --parameters ParameterKey=MasterStackName,ParameterValue=$STACKNAME ParameterKey=EC2Key,ParameterValue=$SIMHOSTKEYNAME
+aws ${AWSPROFILE:+--profile $AWSPROFILE} --region $SIMHOSTREGION cloudformation create-stack --stack-name ${MASTERSTACKNAME}-SimulatedOnPremises --capabilities CAPABILITY_NAMED_IAM --template-url https://s3.amazonaws.com/${BUCKET}/simulated-host-stack-packaged.json --parameters ParameterKey=MasterStackName,ParameterValue=$MASTERSTACKNAME ParameterKey=EC2Key,ParameterValue=$SIMHOSTKEYNAME
 aws ${AWSPROFILE:+--profile $AWSPROFILE} --region $SIMHOSTREGION cloudformation wait stack-create-complete --stack-name ${MASTERSTACKNAME}-SimulatedOnPremises
 
 echo done

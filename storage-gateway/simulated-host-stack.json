@@ -78,9 +78,11 @@
                 "Tags": [
                     {
                         "Key": "Application",
-                        "Value": {
-                            "Ref": "AWS::StackId"
-                        }
+                        "Value": { "Ref": "AWS::StackId" }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-SHVPC"}
                     }
                 ]
             }
@@ -95,9 +97,11 @@
                 "Tags": [
                     {
                         "Key": "Application",
-                        "Value": {
-                            "Ref": "AWS::StackId"
-                        }
+                        "Value": {"Ref": "AWS::StackId"}
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-SHSubnet"}
                     }
                 ]
             }
@@ -111,6 +115,10 @@
                         "Value": {
                             "Ref": "AWS::StackId"
                         }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-SHInternetGateway"}
                     }
                 ]
             }
@@ -138,6 +146,10 @@
                         "Value": {
                             "Ref": "AWS::StackId"
                         }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-SHRouteTable"}
                     }
                 ]
             }
@@ -178,6 +190,10 @@
                         "Value": {
                             "Ref": "AWS::StackId"
                         }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-SHNetworkAcl"}
                     }
                 ]
             }
@@ -213,6 +229,40 @@
                 "PortRange": {
                     "From": "1024",
                     "To": "65535"
+                }
+            }
+        },
+        "SHOutBoundHttpPortsNetworkAclEntry": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "SHNetworkAcl"
+                },
+                "RuleNumber": "90",
+                "Protocol": "6",
+                "RuleAction": "allow",
+                "Egress": "true",
+                "CidrBlock": "0.0.0.0/0",
+                "PortRange": {
+                    "From": "80",
+                    "To": "80"
+                }
+            }
+        },
+        "SHOutBoundHttpsPortsNetworkAclEntry": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "NetworkAclId": {
+                    "Ref": "SHNetworkAcl"
+                },
+                "RuleNumber": "95",
+                "Protocol": "6",
+                "RuleAction": "allow",
+                "Egress": "true",
+                "CidrBlock": "0.0.0.0/0",
+                "PortRange": {
+                    "From": "443",
+                    "To": "443"
                 }
             }
         },
@@ -299,6 +349,10 @@
                                 ]
                             ]
                         }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-win1Instance"}
                     }
                 ],
                 "KeyName": {
@@ -351,12 +405,7 @@
                                 "echo Shortcut \"Disk Management.lnk\" \"diskmgmt.msc\" >> %temp%\\format-disk2-download.ps1\n",
                                 "echo Shortcut \"iSCSI Initiator.lnk\" \"iscsicpl.exe\" >> %temp%\\format-disk2-download.ps1\n",
                                 "echo Get-Disk ^| Where partitionstyle -eq 'RAW' ^| Initialize-Disk -PartitionStyle MBR -PassThru ^| New-Partition -AssignDriveLetter -UseMaximumSize ^| Format-Volume -FileSystem NTFS -NewFileSystemLabel \"Data\" -Confirm:$false >> %temp%\\format-disk2-download.ps1\n",
-                                "echo foreach ($_ in 5..200){ d:\\ >> %temp%\\format-disk2-download.ps1\n",
-                                "echo $a = Get-Random -Minimum 1 -Maximum 99999 >> %temp%\\format-disk2-download.ps1\n",
-                                "echo $a = $a.ToString(\"00000\") >> %temp%\\format-disk2-download.ps1\n",
-                                "echo Read-S3Object -BucketName aft-vbi-pds -Key bin-images/\"$a\".jpg -File d:\\\"$a\".jpg >> %temp%\\format-disk2-download.ps1\n",
-                                "echo $i++ >> %temp%\\format-disk2-download.ps1\n",
-                                "echo } >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Read-S3Object -BucketName levvel-cloud-build-environment -KeyPrefix simhost-data -Folder d:\\ >> %temp%\\format-disk2-download.ps1\n",
                                 "powershell -ExecutionPolicy Bypass -Command %temp%\\format-disk2-download.ps1\n",
                                 "</script>\n"
                             ]
@@ -450,7 +499,7 @@
                                 "s3:ListBucket"
                             ],
                             "Resource": [
-                                "arn:aws:s3:::aft-vbi-pds"
+                                "arn:aws:s3:::levvel-cloud-build-environment"
                             ]
                         },
                         {
@@ -461,13 +510,13 @@
                                 "s3:DeleteObject"
                             ],
                             "Resource": [
-                                "arn:aws:s3:::aft-vbi-pds/*"
+                                "arn:aws:s3:::levvel-cloud-build-environment/*"
                             ]
                         }
                     ],
                     "Version": "2012-10-17"
                 },
-                "PolicyName": "policy",
+                "PolicyName": "s3",
                 "Roles": [
                     {
                         "Ref": "win1IamRole"
