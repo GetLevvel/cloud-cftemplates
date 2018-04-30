@@ -3,7 +3,7 @@
     "Description": "Creates a VPC and Windows Image to Simulate an on-premise environment",
     "Parameters": {
         "MasterStackName": {
-            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Description": "the stack name of the master stack",
             "Type": "String",
         },
         "EC2Key": {
@@ -13,60 +13,18 @@
         }
     },
     "Mappings": {
-        "Region2Examples": {
+        "Region2AMI": {
             "us-east-1": {
-                "Examples": "https://s3.amazonaws.com/cloudformation-examples-us-east-1"
-            },
-            "us-west-2": {
-                "Examples": "https://s3-us-west-2.amazonaws.com/cloudformation-examples-us-west-2"
-            },
-            "us-west-1": {
-                "Examples": "https://s3-us-west-1.amazonaws.com/cloudformation-examples-us-west-1"
-            },
-            "eu-west-1": {
-                "Examples": "https://s3-eu-west-1.amazonaws.com/cloudformation-examples-eu-west-1"
-            },
-            "eu-west-2": {
-                "Examples": "https://s3-eu-west-2.amazonaws.com/cloudformation-examples-eu-west-2"
-            },
-            "eu-west-3": {
-                "Examples": "https://s3-eu-west-3.amazonaws.com/cloudformation-examples-eu-west-3"
-            },
-            "eu-central-1": {
-                "Examples": "https://s3-eu-central-1.amazonaws.com/cloudformation-examples-eu-central-1"
-            },
-            "ap-southeast-1": {
-                "Examples": "https://s3-ap-southeast-1.amazonaws.com/cloudformation-examples-ap-southeast-1"
-            },
-            "ap-northeast-1": {
-                "Examples": "https://s3-ap-northeast-1.amazonaws.com/cloudformation-examples-ap-northeast-1"
-            },
-            "ap-northeast-2": {
-                "Examples": "https://s3-ap-northeast-2.amazonaws.com/cloudformation-examples-ap-northeast-2"
-            },
-            "ap-northeast-3": {
-                "Examples": "https://s3-ap-northeast-3.amazonaws.com/cloudformation-examples-ap-northeast-3"
-            },
-            "ap-southeast-2": {
-                "Examples": "https://s3-ap-southeast-2.amazonaws.com/cloudformation-examples-ap-southeast-2"
-            },
-            "ap-south-1": {
-                "Examples": "https://s3-ap-south-1.amazonaws.com/cloudformation-examples-ap-south-1"
+                "64": "ami-838b53fc"
             },
             "us-east-2": {
-                "Examples": "https://s3-us-east-2.amazonaws.com/cloudformation-examples-us-east-2"
+                "64": "ami-5984b43c"
             },
-            "ca-central-1": {
-                "Examples": "https://s3-ca-central-1.amazonaws.com/cloudformation-examples-ca-central-1"
+            "us-west-1": {
+                "64": "ami-3dd1c25d"
             },
-            "sa-east-1": {
-                "Examples": "https://s3-sa-east-1.amazonaws.com/cloudformation-examples-sa-east-1"
-            },
-            "cn-north-1": {
-                "Examples": "https://s3.cn-north-1.amazonaws.com.cn/cloudformation-examples-cn-north-1"
-            },
-            "cn-northwest-1": {
-                "Examples": "https://s3.cn-northwest-1.amazonaws.com.cn/cloudformation-examples-cn-northwest-1"
+            "us-west-2": {
+                "64": "ami-f3dcbc8b"
             }
         }
     },
@@ -329,7 +287,7 @@
         "win1Instance": {
             "Type": "AWS::EC2::Instance",
             "Properties": {
-                "ImageId": "ami-f3dcbc8b",
+                "ImageId": { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "64"]},
                 "InstanceType": "t2.medium",
                 "IamInstanceProfile": {
                     "Ref": "win1InstanceProfile"
@@ -405,7 +363,7 @@
                                 "echo Shortcut \"Disk Management.lnk\" \"diskmgmt.msc\" >> %temp%\\format-disk2-download.ps1\n",
                                 "echo Shortcut \"iSCSI Initiator.lnk\" \"iscsicpl.exe\" >> %temp%\\format-disk2-download.ps1\n",
                                 "echo Get-Disk ^| Where partitionstyle -eq 'RAW' ^| Initialize-Disk -PartitionStyle MBR -PassThru ^| New-Partition -AssignDriveLetter -UseMaximumSize ^| Format-Volume -FileSystem NTFS -NewFileSystemLabel \"Data\" -Confirm:$false >> %temp%\\format-disk2-download.ps1\n",
-                                "echo Read-S3Object -BucketName levvel-cloud-build-environment -KeyPrefix simhost-data -Folder d:\\ >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Read-S3Object -BucketName levvel-cloud-build-bucket -KeyPrefix simhost-data -Folder d:\\ >> %temp%\\format-disk2-download.ps1\n",
                                 "powershell -ExecutionPolicy Bypass -Command %temp%\\format-disk2-download.ps1\n",
                                 "</script>\n"
                             ]
@@ -499,7 +457,7 @@
                                 "s3:ListBucket"
                             ],
                             "Resource": [
-                                "arn:aws:s3:::levvel-cloud-build-environment"
+                                "arn:aws:s3:::levvel-cloud-build-bucket"
                             ]
                         },
                         {
@@ -510,7 +468,7 @@
                                 "s3:DeleteObject"
                             ],
                             "Resource": [
-                                "arn:aws:s3:::levvel-cloud-build-environment/*"
+                                "arn:aws:s3:::levvel-cloud-build-bucket/*"
                             ]
                         }
                     ],
@@ -526,105 +484,6 @@
         }
     },
     "Outputs": {
-      "SHVPC" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHVPC" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHVPC" }}
-      },
-      "SHSubnet" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHSubnet" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHSubnet" }}
-      },
-      "SHInternetGateway" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHInternetGateway" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHInternetGateway" }}
-      },
-      "SHAttachGateway" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHAttachGateway" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHAttachGateway" }}
-      },
-      "SHRouteTable" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHRouteTable" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHRouteTable" }}
-      },
-      "Route" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "Route" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-Route" }}
-      },
-      "SHSubnetRouteTableAssociation" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHSubnetRouteTableAssociation" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHSubnetRouteTableAssociation" }}
-      },
-      "SHNetworkAcl" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHNetworkAcl" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHNetworkAcl" }}
-      },
-      "SHInboundRDPNetworkAclEntry" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHInboundRDPNetworkAclEntry" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHInboundRDPNetworkAclEntry" }}
-      },
-      "SHInboundResponsePortsNetworkAclEntry" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHInboundResponsePortsNetworkAclEntry" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHInboundResponsePortsNetworkAclEntry" }}
-      },
-      "SHOutBoundResponsePortsNetworkAclEntry" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHOutBoundResponsePortsNetworkAclEntry" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHOutBoundResponsePortsNetworkAclEntry" }}
-      },
-      "SHSubnetNetworkAclAssociation" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHSubnetNetworkAclAssociation" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHSubnetNetworkAclAssociation" }}
-      },
-      "SHIPAddress" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "SHIPAddress" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-SHIPAddress" }}
-      },
-      "win1SecurityGroup" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "win1SecurityGroup" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1SecurityGroup" }}
-      },
-      "win1Instance" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "win1Instance" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1Instance" }}
-      },
-      "windowsDisk2Attach" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "windowsDisk2Attach" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-windowsDisk2Attach" }}
-      },
-      "windowsDisk2" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "windowsDisk2" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-windowsDisk2" }}
-      },
-      "win1InstanceProfile" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "win1InstanceProfile" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1InstanceProfile" }}
-      },
-      "win1IamRole" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "win1IamRole" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1IamRole" }}
-      },
-      "win1RolePolicy" : {
-        "Description" : "policy for the windows box",
-        "Value" : { "Ref": "win1RolePolicy" },
-        "Export" : { "Name" : { "Fn::Sub" : "${MasterStackName}-win1RolePolicy" }}
-      }
+
     }
 }

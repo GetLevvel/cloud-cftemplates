@@ -1,21 +1,22 @@
 
 usage () {
 	echo ""
-	echo "Usage: $0 -s <MasterStackName> -k <KeyPairName> [-b <BucketName>] [-p <AWSProfile>]"
+	echo "Usage: $0 -s <MasterStackName> -k <KeyPairName> [-b <BucketName>] [-p <AWSProfile>] [-S <SimHostRegion>]"
 	echo "  -s: Master stack name, should be short - 2-3 characters"
 	echo "  -k: EC2 Key Pair name to leverage for simulated host access"
 	echo "  -b: S3 bucket name to use for working directory for CloudFormation"
 	echo "  -p: Default profile will be used unless you specify a different profile"
+	echo "  -S: Sim host region, default is us-west-2"
 	echo ""
 }
 
 AWSPROFILE=
-BUCKET='levvel-cloud-build-environment'
+BUCKET='levvel-cloud-build-bucket'
 MASTERSTACKNAME=
 SIMHOSTKEYNAME=
 SIMHOSTREGION='us-west-2'
 
-while getopts b:s:k: o
+while getopts b:s:k:S: o
 do
 	case $o in
 		b)
@@ -29,6 +30,9 @@ do
 			;;
 		p)
 			AWSPROFILE=$OPTARG
+			;;
+		S)
+			SIMHOSTREGION=$OPTARG
 			;;
 		\?)
 			usage
