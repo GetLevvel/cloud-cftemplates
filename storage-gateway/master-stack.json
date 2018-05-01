@@ -1,0 +1,69 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Master Stack for creating Storage Gateway environment",
+    "Parameters": {
+        "MasterStackName": {
+            "Description": "the stack name of the master stack",
+            "Type": "String",
+        },
+        "EC2Key": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "String"
+        },
+        "GatewayRegion": {
+            "Description": "Activation region for the gateway",
+            "Type": "String"
+        }
+    },
+    "Mappings": {
+        "Region2AMI": {
+            "us-east-1": {
+                "win": "ami-838b53fc",
+                "lin": "ami-467ca739"
+            },
+            "us-east-2": {
+                "win": "ami-5984b43c",
+                "lin": "ami-976152f2"
+            },
+            "us-west-1": {
+                "win": "ami-3dd1c25d",
+                "lin": "ami-46e1f226"
+            },
+            "us-west-2": {
+                "win": "ami-f3dcbc8b",
+                "lin": "ami-6b8cef13"
+            }
+        }
+    },
+    "Resources": {
+      "SimulatedHostStack": {
+        "Type": "AWS::CloudFormation::Stack",
+        "Properties": {
+          "TemplateURL": "./simulated-host-stack.json",
+          "TimeoutInMinutes": "10",
+          "Parameters": {
+            "MasterStackName" : {"Ref":"MasterStackName"},
+            "EC2Key": { "Ref":"EC2Key"},
+            "AmiWindows" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "win"]}
+          }
+        }
+      },
+      "GatewayStack": {
+        "Type": "AWS::CloudFormation::Stack",
+        "Properties": {
+          "TemplateURL": "./storage-gateway-stack.json",
+          "TimeoutInMinutes": "10",
+          "Parameters": {
+            "MasterStackName" : {"Ref":"MasterStackName"},
+            "SimHostSecurityGroup" : {"Sub":"${SimulatedHostStack.Outputs.SimHostSecurityGroup}"},
+            "SimHostInstance" : {"Sub":"${SimulatedHostStack.Outputs.SimHostInstance}"},
+            "SimHostSubnet" : {"Sub":"${SimulatedHostStack.Outputs.SimHostSubnet}"},
+            "SimHostVPC" : {"Sub":"${SimulatedHostStack.Outputs.SimHostVPC}"},
+            "ActivationRegion" : {"Ref":"GatewayRegion"},
+            "AmiLinux" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "lin"]}
+          }
+        }
+      }
+    },
+  "Outputs": { }
+}

@@ -8,24 +8,12 @@
         },
         "EC2Key": {
             "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
-            "Type": "AWS::EC2::KeyPair::KeyName",
+            "Type": "String",
             "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
-        }
-    },
-    "Mappings": {
-        "Region2AMI": {
-            "us-east-1": {
-                "64": "ami-838b53fc"
-            },
-            "us-east-2": {
-                "64": "ami-5984b43c"
-            },
-            "us-west-1": {
-                "64": "ami-3dd1c25d"
-            },
-            "us-west-2": {
-                "64": "ami-f3dcbc8b"
-            }
+        },
+        "AmiWindows": {
+            "Description": "Windows ami to use",
+            "Type": "String"
         }
     },
     "Resources": {
@@ -274,6 +262,12 @@
                 "VpcId": {
                     "Ref": "SHVPC"
                 },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-win1SecurityGroup"}
+                    }
+                ],
                 "SecurityGroupIngress": [
                     {
                         "IpProtocol": "tcp",
@@ -287,7 +281,7 @@
         "win1Instance": {
             "Type": "AWS::EC2::Instance",
             "Properties": {
-                "ImageId": { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "64"]},
+                "ImageId":  { "Ref" : "AmiWindows" },
                 "InstanceType": "t2.medium",
                 "IamInstanceProfile": {
                     "Ref": "win1InstanceProfile"
@@ -484,6 +478,33 @@
         }
     },
     "Outputs": {
-
+      "SimHostSecurityGroup" : {
+        "Description" : "SecurityGroup of the simulated host",
+        "Value" : {"Ref": "win1SecurityGroup"},
+        "Export" : {
+          "Name" : "SimHostSecurityGroup"
+        }
+      },
+      "SimHostInstance" : {
+        "Description" : "simulated host",
+        "Value" : {"Ref": "win1Instance"},
+        "Export" : {
+          "Name" : "SimHostInstance"
+        }
+      },
+      "SimHostVPC" : {
+        "Description" : "simulated host",
+        "Value" : {"Ref": "SHVPC"},
+        "Export" : {
+          "Name" : "SimHostVPC"
+        }
+      },
+      "SimHostSubnet" : {
+        "Description" : "simulated host",
+        "Value" : {"Ref": "SHSubnet"},
+        "Export" : {
+          "Name" : "SimHostSubnet"
+        }
+      }
     }
 }
