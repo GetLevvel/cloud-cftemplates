@@ -40,6 +40,17 @@
         }
     },
     "Resources": {
+      "SimulatedHostVPCStack": {
+        "Type": "AWS::CloudFormation::Stack",
+        "Properties": {
+          "TemplateURL": "./vpc-stack.json",
+          "TimeoutInMinutes": "10",
+          "Parameters": {
+            "MasterStackName" : {"Ref":"MasterStackName"},
+            "EC2Key": { "Ref":"EC2Key"}
+          }
+        }
+      },
       "SimulatedHostStack": {
         "Type": "AWS::CloudFormation::Stack",
         "Properties": {
@@ -48,7 +59,13 @@
           "Parameters": {
             "MasterStackName" : {"Ref":"MasterStackName"},
             "EC2Key": { "Ref":"EC2Key"},
-            "AmiWindows" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "win"]}
+            "AmiWindows" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "win"]},
+            "VpcId": {
+               "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostVPC}"
+            },
+            "SubnetId": {
+               "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostSubnet}"
+            }
           }
         }
       },
@@ -62,10 +79,10 @@
             "ActivationRegion" : {"Ref":"GatewayRegion"},
             "AmiLinux" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "stor"]},
             "VpcId": {
-               "Fn::Sub": "${SimulatedHostStack.Outputs.SimHostVPC}"
+               "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostVPC}"
             },
             "SubnetId": {
-               "Fn::Sub": "${SimulatedHostStack.Outputs.SimHostSubnet}"
+               "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostSubnet}"
             },
             "SecurityGroup": {
                "Fn::Sub": "${SimulatedHostStack.Outputs.SimHostSecurityGroup}"

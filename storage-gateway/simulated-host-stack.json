@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "Creates a VPC and Windows Image to Simulate an on-premise environment",
+    "Description": "Windows Image to Simulate an on-premise environment",
     "Parameters": {
         "MasterStackName": {
             "Description": "the stack name of the master stack",
@@ -14,240 +14,19 @@
         "AmiWindows": {
             "Description": "Windows ami to use",
             "Type": "String"
+        },
+        "VpcId": {
+          "Description": "VPC ID",
+          "Type": "String"
+        },
+        "SubnetId": {
+          "Description": "Subnet ID",
+          "Type": "String"
         }
     },
     "Resources": {
-        "SHVPC": {
-            "Type": "AWS::EC2::VPC",
-            "Properties": {
-                "CidrBlock": "10.0.0.0/16",
-                "Tags": [
-                    {
-                        "Key": "Application",
-                        "Value": { "Ref": "AWS::StackId" }
-                    },
-                    {
-                        "Key": "Name",
-                        "Value": {"Fn::Sub": "${MasterStackName}-SHVPC"}
-                    }
-                ]
-            }
-        },
-        "SHSubnet": {
-            "Type": "AWS::EC2::Subnet",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "SHVPC"
-                },
-                "CidrBlock": "10.0.0.0/24",
-                "Tags": [
-                    {
-                        "Key": "Application",
-                        "Value": {"Ref": "AWS::StackId"}
-                    },
-                    {
-                        "Key": "Name",
-                        "Value": {"Fn::Sub": "${MasterStackName}-SHSubnet"}
-                    }
-                ]
-            }
-        },
-        "SHInternetGateway": {
-            "Type": "AWS::EC2::InternetGateway",
-            "Properties": {
-                "Tags": [
-                    {
-                        "Key": "Application",
-                        "Value": {
-                            "Ref": "AWS::StackId"
-                        }
-                    },
-                    {
-                        "Key": "Name",
-                        "Value": {"Fn::Sub": "${MasterStackName}-SHInternetGateway"}
-                    }
-                ]
-            }
-        },
-        "SHAttachGateway": {
-            "Type": "AWS::EC2::VPCGatewayAttachment",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "SHVPC"
-                },
-                "InternetGatewayId": {
-                    "Ref": "SHInternetGateway"
-                }
-            }
-        },
-        "SHRouteTable": {
-            "Type": "AWS::EC2::RouteTable",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "SHVPC"
-                },
-                "Tags": [
-                    {
-                        "Key": "Application",
-                        "Value": {
-                            "Ref": "AWS::StackId"
-                        }
-                    },
-                    {
-                        "Key": "Name",
-                        "Value": {"Fn::Sub": "${MasterStackName}-SHRouteTable"}
-                    }
-                ]
-            }
-        },
-        "Route": {
-            "Type": "AWS::EC2::Route",
-            "DependsOn": "SHAttachGateway",
-            "Properties": {
-                "RouteTableId": {
-                    "Ref": "SHRouteTable"
-                },
-                "DestinationCidrBlock": "0.0.0.0/0",
-                "GatewayId": {
-                    "Ref": "SHInternetGateway"
-                }
-            }
-        },
-        "SHSubnetRouteTableAssociation": {
-            "Type": "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties": {
-                "SubnetId": {
-                    "Ref": "SHSubnet"
-                },
-                "RouteTableId": {
-                    "Ref": "SHRouteTable"
-                }
-            }
-        },
-        "SHNetworkAcl": {
-            "Type": "AWS::EC2::NetworkAcl",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "SHVPC"
-                },
-                "Tags": [
-                    {
-                        "Key": "Application",
-                        "Value": {
-                            "Ref": "AWS::StackId"
-                        }
-                    },
-                    {
-                        "Key": "Name",
-                        "Value": {"Fn::Sub": "${MasterStackName}-SHNetworkAcl"}
-                    }
-                ]
-            }
-        },
-        "SHInboundRDPNetworkAclEntry": {
-            "Type": "AWS::EC2::NetworkAclEntry",
-            "Properties": {
-                "NetworkAclId": {
-                    "Ref": "SHNetworkAcl"
-                },
-                "RuleNumber": "101",
-                "Protocol": "6",
-                "RuleAction": "allow",
-                "Egress": "false",
-                "CidrBlock": "0.0.0.0/0",
-                "PortRange": {
-                    "From": "3389",
-                    "To": "3389"
-                }
-            }
-        },
-        "SHInboundResponsePortsNetworkAclEntry": {
-            "Type": "AWS::EC2::NetworkAclEntry",
-            "Properties": {
-                "NetworkAclId": {
-                    "Ref": "SHNetworkAcl"
-                },
-                "RuleNumber": "102",
-                "Protocol": "6",
-                "RuleAction": "allow",
-                "Egress": "false",
-                "CidrBlock": "0.0.0.0/0",
-                "PortRange": {
-                    "From": "1024",
-                    "To": "65535"
-                }
-            }
-        },
-        "SHOutBoundHttpPortsNetworkAclEntry": {
-            "Type": "AWS::EC2::NetworkAclEntry",
-            "Properties": {
-                "NetworkAclId": {
-                    "Ref": "SHNetworkAcl"
-                },
-                "RuleNumber": "90",
-                "Protocol": "6",
-                "RuleAction": "allow",
-                "Egress": "true",
-                "CidrBlock": "0.0.0.0/0",
-                "PortRange": {
-                    "From": "80",
-                    "To": "80"
-                }
-            }
-        },
-        "SHOutBoundHttpsPortsNetworkAclEntry": {
-            "Type": "AWS::EC2::NetworkAclEntry",
-            "Properties": {
-                "NetworkAclId": {
-                    "Ref": "SHNetworkAcl"
-                },
-                "RuleNumber": "95",
-                "Protocol": "6",
-                "RuleAction": "allow",
-                "Egress": "true",
-                "CidrBlock": "0.0.0.0/0",
-                "PortRange": {
-                    "From": "443",
-                    "To": "443"
-                }
-            }
-        },
-        "SHOutBoundResponsePortsNetworkAclEntry": {
-            "Type": "AWS::EC2::NetworkAclEntry",
-            "Properties": {
-                "NetworkAclId": {
-                    "Ref": "SHNetworkAcl"
-                },
-                "RuleNumber": "102",
-                "Protocol": "6",
-                "RuleAction": "allow",
-                "Egress": "true",
-                "CidrBlock": "0.0.0.0/0",
-                "PortRange": {
-                    "From": "1024",
-                    "To": "65535"
-                }
-            }
-        },
-        "SHSubnetNetworkAclAssociation": {
-            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
-            "Properties": {
-                "SubnetId": {
-                    "Ref": "SHSubnet"
-                },
-                "NetworkAclId": {
-                    "Ref": "SHNetworkAcl"
-                }
-            },
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "38692dfb-ef2e-4a52-9868-ca7594675f61"
-                }
-            }
-        },
-        "SHIPAddress": {
+        "win1IPAddress": {
             "Type": "AWS::EC2::EIP",
-            "DependsOn": "SHAttachGateway",
             "Properties": {
                 "Domain": "vpc",
                 "InstanceId": {
@@ -260,7 +39,7 @@
             "Properties": {
                 "GroupDescription": "Simulated Host RDP Access",
                 "VpcId": {
-                    "Ref": "SHVPC"
+                    "Ref": "VpcId"
                 },
                 "Tags": [
                     {
@@ -330,7 +109,7 @@
                             }
                         ],
                         "SubnetId": {
-                            "Ref": "SHSubnet"
+                            "Ref": "SubnetId"
                         }
                     }
                 ],
@@ -485,19 +264,5 @@
           "Name" : {"Fn::Sub": "${MasterStackName}-SimHostSecurityGroup" }
         }
       },
-      "SimHostVPC" : {
-        "Description" : "simulated host vpc",
-        "Value" : { "Ref" : "SHVPC" },
-        "Export" : {
-          "Name" : {"Fn::Sub": "${MasterStackName}-SimHostVPC" }
-        }
-      },
-      "SimHostSubnet" : {
-        "Description" : "simulated host subnet",
-        "Value" : { "Ref" : "SHSubnet" },
-        "Export" : {
-          "Name" : {"Fn::Sub": "${MasterStackName}-SHSubnet" }
-        }
-      }
     }
 }

@@ -33,6 +33,15 @@
     }
   },
   "Resources": {
+    "SGIPAddress": {
+        "Type": "AWS::EC2::EIP",
+        "Properties": {
+            "Domain": "vpc",
+            "InstanceId": {
+                "Ref": "SGW1Instance"
+            }
+        }
+    },
     "SGW1InstanceProfile": {
       "Type": "AWS::IAM::InstanceProfile",
       "Properties": {
@@ -90,6 +99,12 @@
       "Properties": {
         "VpcId": {"Ref": "VpcId"},
         "GroupDescription": "Gateway 1 Access All Ports",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": {"Fn::Sub": "${MasterStackName}-StorageGatewaySecurityGroup"}
+            }
+        ],
         "SecurityGroupIngress": [{
             "FromPort": "0",
             "IpProtocol": "tcp",
@@ -107,12 +122,6 @@
             "IpProtocol": "icmp",
             "SourceSecurityGroupId": {"Ref": "SecurityGroup" },
             "ToPort": "-1"
-          },
-          {
-            "FromPort": "22",
-            "IpProtocol": "tcp",
-            "SourceSecurityGroupId": {"Ref": "SecurityGroup" },
-            "ToPort": "22"
           }
         ]
       }
@@ -185,7 +194,7 @@
                 "   disks=$(/usr/local/bin/aws storagegateway list-local-disks --gateway-arn ${gatewayarn} --region ${region} --output text)\n",
                 "   disks=$(echo \"$disks\"| awk '{print $4}')\n",
                 "   diskarray=($disks)\n",
-                "   /usr/local/bin/aws storagegateway add-cache --gateway-arn ${gatewayarn} --disk-ids --region ${region} ${diskarray[0]}\n",
+                "   /usr/local/bin/aws storagegateway add-cache --gateway-arn ${gatewayarn} --disk-ids  ${diskarray[0]} --region ${region}\n",
                 "   if [ $? -eq 0 ]; then complete=2; fi\n",
                 "  fi\n",
 
@@ -198,7 +207,6 @@
                 "   sizebytes=1073741824 \n",
                 "   /usr/local/bin/aws storagegateway create-cached-iscsi-volume --gateway-arn ${gatewayarn} --volume-size-in-bytes ${sizebytes} --target-name levvel-vol-1 --network-interface-id ${ip} --client-token iscsi --region ${region}\n",
                 "   if [ $? -eq 0 ]; then complete=4; fi\n",
-                  "   /usr/local/bin/aws ec2 create-tags --resources ${instance} --tags Key=step3,Value=${sizebytes} \n",
                 "  fi\n",
 
                 " count=$((count+1))\n",
