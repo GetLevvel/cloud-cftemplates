@@ -19,19 +19,23 @@
         "Region2AMI": {
             "us-east-1": {
                 "win": "ami-838b53fc",
-                "lin": "ami-467ca739"
+                "lin": "ami-467ca739",
+                "stor": "ami-571ff42a"
             },
             "us-east-2": {
                 "win": "ami-5984b43c",
-                "lin": "ami-976152f2"
+                "lin": "ami-976152f2",
+                "stor": "ami-571ff42a"
             },
             "us-west-1": {
                 "win": "ami-3dd1c25d",
-                "lin": "ami-46e1f226"
+                "lin": "ami-46e1f226",
+                "stor": "ami-571ff42a"
             },
             "us-west-2": {
                 "win": "ami-f3dcbc8b",
-                "lin": "ami-6b8cef13"
+                "lin": "ami-6b8cef13",
+                "stor": "ami-024f3b7a"
             }
         }
     },
@@ -55,12 +59,18 @@
           "TimeoutInMinutes": "10",
           "Parameters": {
             "MasterStackName" : {"Ref":"MasterStackName"},
-            "SimHostSecurityGroup" : {"Sub":"${SimulatedHostStack.Outputs.SimHostSecurityGroup}"},
-            "SimHostInstance" : {"Sub":"${SimulatedHostStack.Outputs.SimHostInstance}"},
-            "SimHostSubnet" : {"Sub":"${SimulatedHostStack.Outputs.SimHostSubnet}"},
-            "SimHostVPC" : {"Sub":"${SimulatedHostStack.Outputs.SimHostVPC}"},
             "ActivationRegion" : {"Ref":"GatewayRegion"},
-            "AmiLinux" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "lin"]}
+            "AmiLinux" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "stor"]},
+            "VpcId": {
+               "Fn::Sub": "${SimulatedHostStack.Outputs.SimHostVPC}"
+            },
+            "SubnetId": {
+               "Fn::Sub": "${SimulatedHostStack.Outputs.SimHostSubnet}"
+            },
+            "SecurityGroup": {
+               "Fn::Sub": "${SimulatedHostStack.Outputs.SimHostSecurityGroup}"
+            },
+            "EC2Key": { "Ref":"EC2Key"}
           }
         }
       }

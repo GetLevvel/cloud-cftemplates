@@ -480,30 +480,23 @@
     "Outputs": {
       "SimHostSecurityGroup" : {
         "Description" : "SecurityGroup of the simulated host",
-        "Value" : {"Ref": "win1SecurityGroup"},
+        "Value" : { "Ref" : "win1SecurityGroup" },
         "Export" : {
-          "Name" : "SimHostSecurityGroup"
-        }
-      },
-      "SimHostInstance" : {
-        "Description" : "simulated host",
-        "Value" : {"Ref": "win1Instance"},
-        "Export" : {
-          "Name" : "SimHostInstance"
+          "Name" : {"Fn::Sub": "${MasterStackName}-SimHostSecurityGroup" }
         }
       },
       "SimHostVPC" : {
-        "Description" : "simulated host",
-        "Value" : {"Ref": "SHVPC"},
+        "Description" : "simulated host vpc",
+        "Value" : { "Ref" : "SHVPC" },
         "Export" : {
-          "Name" : "SimHostVPC"
+          "Name" : {"Fn::Sub": "${MasterStackName}-SimHostVPC" }
         }
       },
       "SimHostSubnet" : {
-        "Description" : "simulated host",
-        "Value" : {"Ref": "SHSubnet"},
+        "Description" : "simulated host subnet",
+        "Value" : { "Ref" : "SHSubnet" },
         "Export" : {
-          "Name" : "SimHostSubnet"
+          "Name" : {"Fn::Sub": "${MasterStackName}-SHSubnet" }
         }
       }
     }

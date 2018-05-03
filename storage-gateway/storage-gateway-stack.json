@@ -6,22 +6,6 @@
       "Description": "the stack name of the master stack",
       "Type": "String",
     },
-    "SimHostSecurityGroup": {
-      "Description": "SecurityGroup ID of the simulated hosted",
-      "Type": "String"
-    },
-    "SimHostInstance": {
-      "Description": "The sim host",
-      "Type": "String"
-    },
-    "SimHostSubnet": {
-      "Description": "Subnet",
-      "Type": "String"
-    },
-    "SimHostVPC": {
-      "Description": "VPC",
-      "Type": "String"
-    },
     "ActivationRegion": {
       "Description": "Region to activate gateway",
       "Type": "String"
@@ -29,6 +13,23 @@
     "AmiLinux": {
       "Description": "Linux AMI",
       "Type": "String"
+    },
+    "VpcId": {
+      "Description": "VPC ID",
+      "Type": "String"
+    },
+    "SubnetId": {
+      "Description": "Subnet ID",
+      "Type": "String"
+    },
+    "SecurityGroup": {
+      "Description": "sim host security group",
+      "Type": "String"
+    },
+    "EC2Key": {
+        "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+        "Type": "String",
+        "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
     }
   },
   "Resources": {
@@ -87,33 +88,31 @@
     "SGW1SecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "VpcId": {
-          "Sub": "SimHostVPC"
-        },
-        "GroupDescription": "Hybrid Workshop - Gateway 1 Access All Ports",
+        "VpcId": {"Ref": "VpcId"},
+        "GroupDescription": "Gateway 1 Access All Ports",
         "SecurityGroupIngress": [{
             "FromPort": "0",
             "IpProtocol": "tcp",
-            "SourceSecurityGroupId": {
-              "Sub": "SimHostSecurityGroup"
-            },
+            "SourceSecurityGroupId": {"Ref": "SecurityGroup" },
             "ToPort": "65535"
           },
           {
             "FromPort": "0",
             "IpProtocol": "udp",
-            "SourceSecurityGroupId": {
-              "Sub": "SimHostSecurityGroup"
-            },
+            "SourceSecurityGroupId": {"Ref": "SecurityGroup" },
             "ToPort": "65535"
           },
           {
             "FromPort": "-1",
             "IpProtocol": "icmp",
-            "SourceSecurityGroupId": {
-              "Sub": "SimHostSecurityGroup"
-            },
+            "SourceSecurityGroupId": {"Ref": "SecurityGroup" },
             "ToPort": "-1"
+          },
+          {
+            "FromPort": "22",
+            "IpProtocol": "tcp",
+            "SourceSecurityGroupId": {"Ref": "SecurityGroup" },
+            "ToPort": "22"
           }
         ]
       }
@@ -121,31 +120,30 @@
     "SGW1Instance": {
       "Type": "AWS::EC2::Instance",
       "Properties": {
+        "KeyName": {
+            "Ref": "EC2Key"
+        },
         "Tags": [{
           "Key": "Name",
           "Value": {
-            "Fn::Join": ["", ["Gateway Server 1 (", {
+            "Fn::Join": ["", ["Levvel-Workshop-Gateway-Server (", {
               "Ref": "AWS::StackName"
             }, ")"]]
           }
         }],
-        "InstanceType": {
-          "Ref": "type"
-        },
+        "InstanceType": "c4.2xlarge",
         "IamInstanceProfile": {
           "Ref": "SGW1InstanceProfile"
         },
         "InstanceInitiatedShutdownBehavior": "terminate",
-        "ImageId": "ami-e110db98",
+        "ImageId": {"Ref": "AmiLinux"},
         "NetworkInterfaces": [{
           "AssociatePublicIpAddress": "true",
           "DeviceIndex": "0",
           "GroupSet": [{
             "Ref": "SGW1SecurityGroup"
           }],
-          "SubnetId": {
-            "Sub": "SimHostSubnet"
-          }
+          "SubnetId": {"Ref": "SubnetId"}
         }],
         "UserData": {
           "Fn::Base64": {
@@ -160,7 +158,9 @@
                 "instance=$(curl http://169.254.169.254/latest/meta-data/instance-id)\n",
                 "ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\n",
                 "echo $ip\n",
-                "name=Hybrid-Workshop-Gateway-Server-1-${instance}\n",
+                "sudo yum install -y awslogs\n",
+                "sudo systemctl start awslogsd\n",
+                "name=Levvel-Workshop-Gateway-Server-${instance}\n",
                 "gwMode=CACHED\n",
                 "region=", {
                   "Ref": "ActivationRegion"
@@ -195,20 +195,20 @@
                 "  fi\n",
 
                 "  if [ $complete -eq 3 ]; then\n",
-                "   sizebytes=$((1024*1024*1024*))\n",
-                "   /usr/local/bin/aws storagegateway create-cached-iscsi-volume --gateway-arn ${gatewayarn} --volume-size-in-bytes ${sizebytes} --target-name frankfurt-vol-1 --network-interface-id ${ip} --client-token iscsi --region ${region}\n",
+                "   sizebytes=1073741824 \n",
+                "   /usr/local/bin/aws storagegateway create-cached-iscsi-volume --gateway-arn ${gatewayarn} --volume-size-in-bytes ${sizebytes} --target-name levvel-vol-1 --network-interface-id ${ip} --client-token iscsi --region ${region}\n",
                 "   if [ $? -eq 0 ]; then complete=4; fi\n",
+                  "   /usr/local/bin/aws ec2 create-tags --resources ${instance} --tags Key=step3,Value=${sizebytes} \n",
                 "  fi\n",
 
                 " count=$((count+1))\n",
                 "done\n",
-
                 "if [ $complete -eq 4 ]; then\n",
-                " /usr/local/bin/aws ec2 create-tags --resources ${instance} --tags \"Key=Name,Value=", "Hybrid Workshop - Migrate - Gateway Server 1 (Activated) - (", {
+                " /usr/local/bin/aws ec2 create-tags --resources ${instance} --tags \"Key=Name,Value=", "Levvel-Workshop-Gateway-Server (Activated) - (", {
                   "Ref": "AWS::StackName"
                 }, ")\"\n",
                 "else\n",
-                " /usr/local/bin/aws ec2 create-tags --resources ${instance} --tags \"Key=Name,Value=", "Hybrid Workshop - Migrate - Gateway Server 1 (FAILED ACTIVATION) - (", {
+                " /usr/local/bin/aws ec2 create-tags --resources ${instance} --tags \"Key=Name,Value=", "Levvel-Workshop-Gateway-Server (FAILED ACTIVATION) - (", {
                   "Ref": "AWS::StackName"
                 }, ")\"\n",
                 "fi\n",
@@ -238,14 +238,12 @@
         "AvailabilityZone": {
           "Fn::GetAtt": ["SGW1Instance", "AvailabilityZone"]
         },
-        "Size": {
-          "Ref": "uploadBufferSize"
-        },
+        "Size": "10",
         "VolumeType": "gp2",
         "Tags": [{
           "Key": "Name",
           "Value": {
-            "Fn::Join": ["", ["Gateway Server 1 - EBS 2 - Upload Buffer (", {
+            "Fn::Join": ["", ["Levvel-Workshop-Gateway-Server - EBS 2 - Upload Buffer (", {
               "Ref": "AWS::StackName"
             }, ")"]]
           }
@@ -270,14 +268,12 @@
         "AvailabilityZone": {
           "Fn::GetAtt": ["SGW1Instance", "AvailabilityZone"]
         },
-        "Size": {
-          "Ref": "cacheSize"
-        },
+        "Size": "10",
         "VolumeType": "gp2",
         "Tags": [{
           "Key": "Name",
           "Value": {
-            "Fn::Join": ["", ["Gateway Server 1 - EBS 3 - Cache (", {
+            "Fn::Join": ["", ["Levvel-Workshop-Gateway-Server - EBS 3 - Cache (", {
               "Ref": "AWS::StackName"
             }, ")"]]
           }
