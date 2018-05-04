@@ -204,11 +204,10 @@
                 "  fi\n",
 
                 "  if [ $complete -eq 3 ]; then\n",
-                "   sizebytes=1073741824 \n",
+                "   sizebytes=1073741824\n",
                 "   /usr/local/bin/aws storagegateway create-cached-iscsi-volume --gateway-arn ${gatewayarn} --volume-size-in-bytes ${sizebytes} --target-name levvel-vol-1 --network-interface-id ${ip} --client-token iscsi --region ${region}\n",
                 "   if [ $? -eq 0 ]; then complete=4; fi\n",
                 "  fi\n",
-
                 " count=$((count+1))\n",
                 "done\n",
                 "if [ $complete -eq 4 ]; then\n",
