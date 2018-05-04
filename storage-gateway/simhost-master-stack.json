@@ -6,7 +6,7 @@
             "Description": "the stack name of the master stack",
             "Type": "String",
         },
-        "EC2Key": {
+        "SimHostKey": {
             "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
             "Type": "String"
         },
@@ -18,24 +18,18 @@
     "Mappings": {
         "Region2AMI": {
             "us-east-1": {
-                "win": "ami-838b53fc",
-                "lin": "ami-467ca739",
-                "stor": "ami-571ff42a"
+                "win": "ami-838b53fc"
             },
             "us-east-2": {
-                "win": "ami-5984b43c",
-                "lin": "ami-976152f2",
-                "stor": "ami-571ff42a"
+                "win": "ami-5984b43c"
             },
             "us-west-1": {
                 "win": "ami-3dd1c25d",
-                "lin": "ami-46e1f226",
-                "stor": "ami-571ff42a"
+                "stor": "ami-b0d8c7d0"
             },
             "us-west-2": {
                 "win": "ami-f3dcbc8b",
-                "lin": "ami-6b8cef13",
-                "stor": "ami-024f3b7a"
+                "stor": "ami-535b2c2b"
             }
         }
     },
@@ -47,7 +41,7 @@
           "TimeoutInMinutes": "10",
           "Parameters": {
             "MasterStackName" : {"Ref":"MasterStackName"},
-            "EC2Key": { "Ref":"EC2Key"}
+            "EC2Key": { "Ref":"SimHostKey"}
           }
         }
       },
@@ -58,7 +52,7 @@
           "TimeoutInMinutes": "10",
           "Parameters": {
             "MasterStackName" : {"Ref":"MasterStackName"},
-            "EC2Key": { "Ref":"EC2Key"},
+            "EC2Key": { "Ref":"SimHostKey"},
             "AmiWindows" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "win"]},
             "VpcId": {
                "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostVPC}"
@@ -86,8 +80,7 @@
             },
             "SecurityGroup": {
                "Fn::Sub": "${SimulatedHostStack.Outputs.SimHostSecurityGroup}"
-            },
-            "EC2Key": { "Ref":"EC2Key"}
+            }
           }
         }
       }
