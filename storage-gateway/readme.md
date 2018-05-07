@@ -1,4 +1,4 @@
-# Storage Gateway and Disaster Recovery Description
+# Storage Gateway and Disaster Recovery Template
 
 ## Introduction
 
