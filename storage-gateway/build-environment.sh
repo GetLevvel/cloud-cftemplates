@@ -22,7 +22,12 @@ while getopts n:s:p: o
 do
 	case $o in
 		n)
-			MASTERSTACKNAME=$OPTARG
+			# bash generate random number between 0 and 99
+			NUMBER=$(cat /dev/urandom | LC_CTYPE=C  tr -dc "[:alpha:]" | head -c 8)
+			if [ "$NUMBER" == "" ]; then
+			  NUMBER=0
+			fi
+			MASTERSTACKNAME=$OPTARG-$NUMBER
 			;;
 		s)
 			SIMHOST_KEYNAME=$OPTARG
