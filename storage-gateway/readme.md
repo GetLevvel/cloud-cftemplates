@@ -31,7 +31,7 @@ The following artifacts are created in AWS:
 
 The host needs to be manually configured. Wait until the storage gateway displays a volume as in the following image:
 
-![Storage Gateway Is Available]{images/image1.png}
+![Storage Gateway Is Available](images/image1.png)
 
 Once available, connected to your simulated host and perform the following steps:
 
@@ -39,22 +39,33 @@ Once available, connected to your simulated host and perform the following steps
 
 * Enter the IP address of your gateway into the Target label and select 'Quick Connect':
 
-![Target IP Address]{images/image2.png}
+![Target IP Address](images/image2.png)
 
 * Select the gateway and click the Done button
 
-![Select Gateway]{images/image3.png}
+![Select Gateway](images/image3.png)
 
 * Open the Disk Management utility to manage the new disk and mount it
 
-![Disk Utility]{images/image4.png}
+![Disk Utility](images/image4.png)
 
 * Once complete, the new disk should be available as E:
 
-![New Volume]{images/image5.png}
+![New Volume](images/image5.png)
 
 * Copy data on drive D: to E:
 
 ```
 robocopy d: e:
 ```
+## Step 3 - Observe Storage Gateway Operations
+
+The Simulated Host is now connected to the Storage Gateway. The Simulated Host now has data stored on the iSCSI drive hosted by the Storage Gateway.
+
+* Observe the transfer of data from the Simulated Host, through the Storage Gateway to the Storage Gateway Service. Go to the AWS Storage Gateway console and select the Storage Gateway Service. The **Upload buffer usage** property indicates that data has moved from the Simulated Host to Storage Gateway volume.
+
+![Upload buffer usage](images/image6.png)
+
+* Go to the Volumes tab. Note available actions. Let's select **Create EBS snapshot**
+
+![Upload buffer usage](images/image7.png)
