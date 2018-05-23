@@ -54,6 +54,26 @@
                         "ToPort": "3389",
                         "CidrIp": "0.0.0.0/0"
                     }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "80",
+                        "ToPort": "80",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "443",
+                        "ToPort": "443",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "3260",
+                        "ToPort": "3260",
+                        "CidrIp": "0.0.0.0/0"
+                    }
                 ]
             }
         },
@@ -145,18 +165,7 @@
                 }
             }
         },
-        "windowsDisk2Attach": {
-            "Type": "AWS::EC2::VolumeAttachment",
-            "Properties": {
-                "Device": "/dev/xvdb",
-                "InstanceId": {
-                    "Ref": "win1Instance"
-                },
-                "VolumeId": {
-                    "Ref": "windowsDisk2"
-                }
-            }
-        },
+
         "windowsDisk2": {
             "Type": "AWS::EC2::Volume",
             "Properties": {
@@ -185,6 +194,18 @@
                         }
                     }
                 ]
+            }
+        },
+        "windowsDisk2Attach": {
+            "Type": "AWS::EC2::VolumeAttachment",
+            "Properties": {
+                "Device": "/dev/xvdb",
+                "InstanceId": {
+                    "Ref": "win1Instance"
+                },
+                "VolumeId": {
+                    "Ref": "windowsDisk2"
+                }
             }
         },
         "win1InstanceProfile": {

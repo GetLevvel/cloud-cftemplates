@@ -34,7 +34,7 @@
         }
     },
     "Resources": {
-      "SimulatedHostVPCStack": {
+      "VPCStack": {
         "Type": "AWS::CloudFormation::Stack",
         "Properties": {
           "TemplateURL": "./vpc-stack.json",
@@ -42,7 +42,13 @@
           "Parameters": {
             "MasterStackName" : {"Ref":"MasterStackName"},
             "EC2Key": { "Ref":"SimHostKey"}
-          }
+          },
+          "Tags" : [
+            {
+              "Key": "MasterStackName",
+              "Value" : { "Ref": "MasterStackName"}
+            }
+          ]
         }
       },
       "SimulatedHostStack": {
@@ -55,12 +61,18 @@
             "EC2Key": { "Ref":"SimHostKey"},
             "AmiWindows" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "win"]},
             "VpcId": {
-               "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostVPC}"
+               "Fn::Sub": "${VPCStack.Outputs.SimHostVPC}"
             },
             "SubnetId": {
-               "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostSubnet}"
+               "Fn::Sub": "${VPCStack.Outputs.SimHostSubnet}"
             }
-          }
+          },
+          "Tags" : [
+            {
+              "Key": "MasterStackName",
+              "Value" : { "Ref": "MasterStackName"}
+            }
+          ]
         }
       },
       "GatewayStack": {
@@ -73,15 +85,21 @@
             "ActivationRegion" : {"Ref":"GatewayRegion"},
             "AmiLinux" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "stor"]},
             "VpcId": {
-               "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostVPC}"
+               "Fn::Sub": "${VPCStack.Outputs.SimHostVPC}"
             },
             "SubnetId": {
-               "Fn::Sub": "${SimulatedHostVPCStack.Outputs.SimHostSubnet}"
+               "Fn::Sub": "${VPCStack.Outputs.SimHostSubnet}"
             },
             "SecurityGroup": {
                "Fn::Sub": "${SimulatedHostStack.Outputs.SimHostSecurityGroup}"
             }
-          }
+          },
+          "Tags" : [
+            {
+              "Key": "MasterStackName",
+              "Value" : { "Ref": "MasterStackName"}
+            }
+          ]
         }
       }
     },
