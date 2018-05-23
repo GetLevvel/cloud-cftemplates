@@ -1,8 +1,8 @@
-# Storage Gateway and Disaster Recovery Template
+# Storage Gateway  Template
 
 ## Introduction
 
-The purpose of this project is to create a basic storage gateway configuration with a simulated host environment and gateway using CloudFormation. Optionally, a disaster recovery environment may be used to demonstrate how the Storage Gateway may be used for both a backup and DR solution.
+The purpose of this project is to create a basic storage gateway configuration with a simulated host environment and gateway using CloudFormation.
 
 ## Step 1 - Create VPC, Simulated Host and a Cached Volume Gateway
 
@@ -70,6 +70,6 @@ The Simulated Host is now connected to the Storage Gateway. The Simulated Host n
 
 ![Upload buffer usage](images/image7.png)
 
-* Once the snapshot is complete, it is available for restoration in case of a failure.
+* Once the snapshot is complete, it is available as a point-in-time backup to your existing application.
 
 ![Snapshot Available](images/image8.png)
