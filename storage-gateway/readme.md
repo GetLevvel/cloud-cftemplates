@@ -66,6 +66,10 @@ The Simulated Host is now connected to the Storage Gateway. The Simulated Host n
 
 ![Upload buffer usage](images/image6.png)
 
-* Go to the Volumes tab. Note available actions. Let's select **Create EBS snapshot**
+* Go to the Volumes tab. Note available actions. Let's select **Create EBS snapshot**. You may also create a snapshot schedule.
 
 ![Upload buffer usage](images/image7.png)
+
+* Once the snapshot is complete, it is available for restoration in case of a failure.
+
+![Snapshot Available](images/image8.png)
