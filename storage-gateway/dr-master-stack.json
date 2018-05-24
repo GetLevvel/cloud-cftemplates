@@ -1,0 +1,107 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Master Stack for creating disaster recovery environment",
+    "Parameters": {
+        "MasterStackName": {
+            "Description": "the stack name of the master stack",
+            "Type": "String",
+        },
+        "SimHostKey": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "String"
+        },
+        "GatewayRegion": {
+            "Description": "Activation region for the gateway",
+            "Type": "String"
+        }
+    },
+    "Mappings": {
+        "Region2AMI": {
+            "us-east-1": {
+                "win": "ami-838b53fc"
+            },
+            "us-east-2": {
+                "win": "ami-5984b43c"
+            },
+            "us-west-1": {
+                "win": "ami-3dd1c25d",
+                "stor": "ami-b0d8c7d0"
+            },
+            "us-west-2": {
+                "win": "ami-f3dcbc8b",
+                "stor": "ami-535b2c2b"
+            }
+        }
+    },
+    "Resources": {
+      "VPCStack": {
+        "Type": "AWS::CloudFormation::Stack",
+        "Properties": {
+          "TemplateURL": "./vpc-stack.json",
+          "TimeoutInMinutes": "10",
+          "Parameters": {
+            "MasterStackName" : {"Ref":"MasterStackName"},
+            "EC2Key": { "Ref":"SimHostKey"}
+          },
+          "Tags" : [
+            {
+              "Key": "MasterStackName",
+              "Value" : { "Ref": "MasterStackName"}
+            }
+          ]
+        }
+      },
+      "DRHostStack": {
+        "Type": "AWS::CloudFormation::Stack",
+        "Properties": {
+          "TemplateURL": "./dr-host-stack.json",
+          "TimeoutInMinutes": "10",
+          "Parameters": {
+            "MasterStackName" : {"Ref":"MasterStackName"},
+            "EC2Key": { "Ref":"SimHostKey"},
+            "AmiWindows" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "win"]},
+            "VpcId": {
+               "Fn::Sub": "${VPCStack.Outputs.SimHostVPC}"
+            },
+            "SubnetId": {
+               "Fn::Sub": "${VPCStack.Outputs.SimHostSubnet}"
+            }
+          },
+          "Tags" : [
+            {
+              "Key": "MasterStackName",
+              "Value" : { "Ref": "MasterStackName"}
+            }
+          ]
+        }
+      },
+      "GatewayStack": {
+        "Type": "AWS::CloudFormation::Stack",
+        "Properties": {
+          "TemplateURL": "./storage-gateway-stack.json",
+          "TimeoutInMinutes": "10",
+          "Parameters": {
+            "MasterStackName" : {"Ref":"MasterStackName"},
+            "ActivationRegion" : {"Ref":"GatewayRegion"},
+            "AmiLinux" : { "Fn::FindInMap" : [ "Region2AMI", { "Ref" : "AWS::Region" }, "stor"]},
+            "VpcId": {
+               "Fn::Sub": "${VPCStack.Outputs.SimHostVPC}"
+            },
+            "SubnetId": {
+               "Fn::Sub": "${VPCStack.Outputs.SimHostSubnet}"
+            },
+            "SecurityGroup": {
+               "Fn::Sub": "${DRHostStack.Outputs.DRHostSecurityGroup}"
+            }
+          },
+          "Tags" : [
+            {
+              "Key": "MasterStackName",
+              "Value" : { "Ref": "MasterStackName"}
+            }
+          ]
+        }
+      }
+    },
+  "Outputs": { }
+}

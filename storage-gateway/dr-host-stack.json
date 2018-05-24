@@ -1,0 +1,288 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Windows Image to Simulate a disaster recovery host",
+    "Parameters": {
+        "MasterStackName": {
+            "Description": "the stack name of the master stack",
+            "Type": "String",
+        },
+        "EC2Key": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "String",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "AmiWindows": {
+            "Description": "Windows ami to use",
+            "Type": "String"
+        },
+        "VpcId": {
+          "Description": "VPC ID",
+          "Type": "String"
+        },
+        "SubnetId": {
+          "Description": "Subnet ID",
+          "Type": "String"
+        }
+    },
+    "Resources": {
+        "drhostIPAddress": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc",
+                "InstanceId": {
+                    "Ref": "drhostInstance"
+                }
+            }
+        },
+        "drhostSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Simulated Host RDP Access",
+                "VpcId": {
+                    "Ref": "VpcId"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-drhostSecurityGroup"}
+                    }
+                ],
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "3389",
+                        "ToPort": "3389",
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "80",
+                        "ToPort": "80",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "443",
+                        "ToPort": "443",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "3260",
+                        "ToPort": "3260",
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]
+            }
+        },
+        "drhostInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId":  { "Ref" : "AmiWindows" },
+                "InstanceType": "t2.medium",
+                "IamInstanceProfile": {
+                    "Ref": "drhostInstanceProfile"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "DR HOST 1 (",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    ")"
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {"Fn::Sub": "${MasterStackName}-drhostInstance"}
+                    }
+                ],
+                "KeyName": {
+                    "Ref": "EC2Key"
+                },
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/sda1",
+                        "Ebs": {
+                            "VolumeSize": "30",
+                            "DeleteOnTermination": "true",
+                            "VolumeType": "gp2"
+                        }
+                    }
+                ],
+                "NetworkInterfaces": [
+                    {
+                        "AssociatePublicIpAddress": "true",
+                        "DeviceIndex": "0",
+                        "GroupSet": [
+                            {
+                                "Ref": "drhostSecurityGroup"
+                            }
+                        ],
+                        "SubnetId": {
+                            "Ref": "SubnetId"
+                        }
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "<script>\n",
+                                "echo function Shortcut >> %temp%\\format-disk2-download.ps1\n",
+                                "echo { >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   param([string]$name, [string]$path) >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   $WshShell = New-Object -ComObject WScript.Shell >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   $Shortcut = $WshShell.CreateShortcut(\"$Home\\Desktop\\$name\") >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   $Shortcut.TargetPath = $path >> %temp%\\format-disk2-download.ps1\n",
+                                "echo   $Shortcut.Save() >> %temp%\\format-disk2-download.ps1\n",
+                                "echo } >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $client = new-object System.Net.WebClient >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $client.DownloadFile(\"https://s3.amazonaws.com/aws-cli/AWSCLI64.msi\",\"${env:temp}\\AWSCLI64.msi\") >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Start-Process -Wait -FilePath \"%temp%\\AWSCLI64.msi\" -ArgumentList /qb >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $client = new-object System.Net.WebClient >> %temp%\\format-disk2-download.ps1\n",
+                                "echo $client.DownloadFile(\"https://download.mozilla.org/?product=firefox-latest&os=win&lang=en-US\",\"${env:temp}\\firefox.exe\") >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Start-Process -Wait -FilePath \"${env:TEMP}\\firefox.exe\" -ArgumentList \"-ms\" >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Shortcut \"Disk Management.lnk\" \"diskmgmt.msc\" >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Shortcut \"iSCSI Initiator.lnk\" \"iscsicpl.exe\" >> %temp%\\format-disk2-download.ps1\n",
+                                "echo Get-Disk ^| Where partitionstyle -eq 'RAW' ^| Initialize-Disk -PartitionStyle MBR -PassThru ^| New-Partition -AssignDriveLetter -UseMaximumSize ^| Format-Volume -FileSystem NTFS -NewFileSystemLabel \"Data\" -Confirm:$false >> %temp%\\format-disk2-download.ps1\n",
+                                "powershell -ExecutionPolicy Bypass -Command %temp%\\format-disk2-download.ps1\n",
+                                "</script>\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+
+        "windowsDisk2": {
+            "Type": "AWS::EC2::Volume",
+            "Properties": {
+                "AvailabilityZone": {
+                    "Fn::GetAtt": [
+                        "drhostInstance",
+                        "AvailabilityZone"
+                    ]
+                },
+                "Size": "1",
+                "VolumeType": "gp2",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "Windows Server 1 Disk 2 (",
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    ")"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "windowsDisk2Attach": {
+            "Type": "AWS::EC2::VolumeAttachment",
+            "Properties": {
+                "Device": "/dev/xvdb",
+                "InstanceId": {
+                    "Ref": "drhostInstance"
+                },
+                "VolumeId": {
+                    "Ref": "windowsDisk2"
+                }
+            }
+        },
+        "drhostInstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "drhostIamRole"
+                    }
+                ]
+            }
+        },
+        "drhostIamRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                }
+            }
+        },
+        "drhostRolePolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:ListBucket"
+                            ],
+                            "Resource": [
+                                "arn:aws:s3:::levvel-cloud-build-bucket"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:PutObject",
+                                "s3:GetObject",
+                                "s3:DeleteObject"
+                            ],
+                            "Resource": [
+                                "arn:aws:s3:::levvel-cloud-build-bucket/*"
+                            ]
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "PolicyName": "s3",
+                "Roles": [
+                    {
+                        "Ref": "drhostIamRole"
+                    }
+                ]
+            }
+        }
+    },
+    "Outputs": {
+      "DRHostSecurityGroup" : {
+        "Description" : "SecurityGroup of the simulated host",
+        "Value" : { "Ref" : "drhostSecurityGroup" },
+        "Export" : {
+          "Name" : {"Fn::Sub": "${MasterStackName}-DRHostSecurityGroup" }
+        }
+      },
+    }
+}
