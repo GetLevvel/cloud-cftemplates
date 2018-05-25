@@ -1,8 +1,8 @@
-# Storage Gateway  Template
+# Storage Gateway with Disaster Recovery Template
 
 ## Introduction
 
-The purpose of this project is to create a basic storage gateway configuration with a simulated host environment and gateway using CloudFormation.
+The purpose of this project is to create a basic storage gateway configuration with a simulated host environment and gateway using CloudFormation. If instructed, the build script will also create a corresponding simulated disaster recovery envrionment.
 
 ## Step 1 - Create VPC, Simulated Host and a Cached Volume Gateway
 
@@ -15,8 +15,9 @@ Shell arguments:
 ```
 -n = Stack Prefix, just use your initials, example: cmm
 -s = Key name in us-west-2, example: cmm-west-2
+-r = Create a Disaster recovery environment pass in EC2 key for use in DR environment (us-west-1)
 
-Example execution: ./build-environment.sh -n cmm -s cmm-west-2
+Example execution: ./build-environment.sh -n cmm -s cmm-west-2 [-r cmm-west-1]
 ```
 ### What is created
 
@@ -26,6 +27,7 @@ The following artifacts are created in AWS:
 * A Windows 7 image in us-west-2 (Simulated Host)
 * A Linux image in us-west-2 (Storage Gateway)
 * A Storage Gateway service in us-east-1
+* If -r is specified, a similar environment is created in us-west-1 with a DR Storage Gateway created in us-east-1
 
 ## Step 2 - Configure Simulated host
 
@@ -73,3 +75,7 @@ The Simulated Host is now connected to the Storage Gateway. The Simulated Host n
 * Once the snapshot is complete, it is available as a point-in-time backup to your existing application.
 
 ![Snapshot Available](images/image8.png)
+
+## Step 4 - DR environment
+
+Follow similar steps in the DR environment as specified in Step 1
