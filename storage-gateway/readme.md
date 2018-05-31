@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The purpose of this project is to create a basic storage gateway configuration with a simulated host environment and gateway using CloudFormation. If instructed, the build script will also create a corresponding simulated disaster recovery envrionment.
+The purpose of this project is to create a basic storage gateway configuration with a simulated host environment and gateway using CloudFormation. If instructed, the build script will also create a corresponding simulated disaster recovery environment.
 
 ## Step 1 - Create VPC, Simulated Host and a Cached Volume Gateway
 
