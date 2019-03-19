@@ -1,0 +1,49 @@
+---
+Description: S3 Website Bucket + R53 Domain Name
+
+Parameters:
+
+  AppName:
+    Description: Name of the app being deployed
+    Type: String
+  
+  DomainName:
+    Description: Route53 Hosted Zone to add a CNAME record to
+    Type: String
+
+Resources:
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AppName}.${DomainName}"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Sub "arn:aws:s3:::${WebsiteBucket}/*"
+            Principal: "*"
+
+  Route53RecordSet:
+    Type: "AWS::Route53::RecordSet"
+    Properties:
+      ResourceRecords:
+        - !GetAtt [WebsiteBucket, WebsiteURL]
+      Type: CNAME
+      TTL: 300
+      HostedZoneName: !Sub "${DomainName}."
+      Name: !Sub "${AppName}.${DomainName}"
+
+Outputs:
+
+  BucketName:
+    Description: Name of the created bucket
+    Value: !Ref WebsiteBucket
