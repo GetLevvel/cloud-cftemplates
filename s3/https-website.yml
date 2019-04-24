@@ -1,13 +1,11 @@
 ---
-# Purpose: CloudFormation Template to create S3 Hosted Website
-#
 # Assumes the following are already created:
 #  - Route53 Hosted Zones be created if doing a CloudFront distribution
-#  - an ACM cert be provisioned in the same region
+#  - an ACM cert provisioned in the same region
 #
 # The template creates three main resources:
 # 1) The Website bucket where the static files will live
-# 2) The CloudFront distribution which serves the static assets over CDN
+# 2) The CloudFront distribution which serves the static assets over CDN using SSL (with the provided ACM cert)
 # 3) The Route53 DNS record set for your custom domain.
 #
 # NOTE - a CloudFront distribution is a very long deployment process (+/- 1 hour)
@@ -26,22 +24,10 @@ Parameters:
   DomainName:
     Description: HTTP Domain to register with
     Type: String
-
-  DeployCloudFront:
-    Description: Should this deploy to the CloudFront CDN?
-    Type: String
-    Default: "false"
-    AllowedValues:
-      - "false"
-      - "true"
   
   SslCertArn:
     Description: ARN of the ACM Certificate to use to enable SSL
     Type: String
-
-Conditions:
-
-  DeployCloudFront: !Not [!Equals [!Ref DeployCloudFront, "false"]]
 
 Resources:
 
@@ -78,21 +64,17 @@ Resources:
             Action:
               - s3:GetObject
             Resource: !Sub "arn:aws:s3:::${WebsiteBucket}/*"
-            Principal: !If 
-              - DeployCloudFront
-              - AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}"
-              - "*"
+            Principal:
+              AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}"
 
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
-    Condition: DeployCloudFront
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: !Sub "${AppName} ${EnvName}"
 
   CloudFrontWebsite:
     Type: AWS::CloudFront::Distribution
-    Condition: DeployCloudFront
     Properties:
       DistributionConfig:
         Aliases:
@@ -141,7 +123,6 @@ Resources:
   
   Route53RecordSetWithCloudFront:
     Type: AWS::Route53::RecordSet
-    Condition: DeployCloudFront
     Properties:
       AliasTarget:
         DNSName: !GetAtt CloudFrontWebsite.DomainName
