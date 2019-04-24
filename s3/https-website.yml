@@ -1,0 +1,146 @@
+---
+# Assumes the following are already created:
+#  - Route53 Hosted Zones be created if doing a CloudFront distribution
+#  - an ACM cert provisioned in the same region
+#
+# The template creates three main resources:
+# 1) The Website bucket where the static files will live
+# 2) The CloudFront distribution which serves the static assets over CDN using SSL (with the provided ACM cert)
+# 3) The Route53 DNS record set for your custom domain.
+#
+# NOTE - a CloudFront distribution is a very long deployment process (+/- 1 hour)
+Description: SSL Enabled S3 Website with an optional CloudFront Distribution
+
+Parameters:
+
+  AppName:
+    Description: Application being deployed
+    Type: String
+
+  EnvName:
+    Description: Which environment do you want to deploy to?
+    Type: String
+  
+  DomainName:
+    Description: HTTP Domain to register with
+    Type: String
+  
+  SslCertArn:
+    Description: ARN of the ACM Certificate to use to enable SSL
+    Type: String
+
+Resources:
+
+  LoggingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+      BucketName: !Sub "${EnvName}-${AppName}-logging"
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 30
+            Status: Enabled
+
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${EnvName}-${AppName}"
+      VersioningConfiguration:
+        Status: Enabled
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LoggingBucket
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - 
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${WebsiteBucket}/*"
+            Principal:
+              AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}"
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "${AppName} ${EnvName}"
+
+  CloudFrontWebsite:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Sub "${EnvName}.${DomainName}"
+        Origins:
+        - DomainName: !Sub ${WebsiteBucket}.s3.amazonaws.com
+          Id: !Ref WebsiteBucket
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}
+        Enabled: true
+        HttpVersion: http2
+        Comment: !Sub "${AppName} ${EnvName}"
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 300
+            ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCachingMinTTL: 300
+            ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        Logging:
+          IncludeCookies: false
+          Bucket: !Sub ${LoggingBucket}.s3.amazonaws.com
+          Prefix: cloudfront
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          DefaultTTL: 60
+          MaxTTL: 60
+          MinTTL: 60
+          TargetOriginId: !Ref WebsiteBucket
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref SslCertArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.1_2016
+  
+  Route53RecordSetWithCloudFront:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontWebsite.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # Cloudfront Hosted Zone ID
+      Type: A
+      HostedZoneName: !Sub "${EnvName}.${DomainName}."
+      Name: !Sub "${EnvName}.${DomainName}"
+
+Outputs:
+
+  DomainName:
+    Description: URL Domain for the deployed website
+    Value: !Sub "${EnvName}.${DomainName}"
+
+  WebsiteBucketUrl:
+    Description: S3 bucket used as the website root
+    Value: !GetAtt WebsiteBucket.WebsiteURL
+
+  BucketName:
+    Value: !Ref WebsiteBucket
+    Description: Name of the created S3 bucket.

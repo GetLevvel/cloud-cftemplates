@@ -1,0 +1,49 @@
+---
+Description: CloudWatch Logs export bucket
+
+Parameters:
+
+  AppName:
+    Description: Name of the application associated to these logs
+    Type: String
+
+  EnvName:
+    Description: Which environment are you deploying to?
+    Type: String
+
+Resources:
+
+  LogsExportBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub "${AppName}-${EnvName}-logs"
+      Tags:
+        - Key: Application
+          Value: !Ref AppName
+        - Key: Environment
+          Value: !Ref EnvName
+
+  BucketPolicyCredentials:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LogsExportBucket
+      PolicyDocument:
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+              - s3:GetBucketAcl
+            Resource: !Sub "arn:aws:s3:::${LogsExportBucket}"
+            Principal:
+              Service: [logs.us-east-1.amazonaws.com]
+          - 
+            Effect: Allow
+            Action: 
+              - s3:PutObject
+            Resource: !Sub "arn:aws:s3:::${LogsExportBucket}/*"
+            Principal:
+              Service: [logs.us-east-1.amazonaws.com]
+            Condition:
+              "StringEquals":
+                s3:x-amz-acl: "bucket-owner-full-control"

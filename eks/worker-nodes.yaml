@@ -1,0 +1,134 @@
+---
+Description: EKS AutoScalingGroup sub-template
+
+Parameters:
+
+  AppName:
+    Description: Application the infrastructure belongs to
+    Type: String
+
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instances
+    Type: AWS::EC2::KeyPair::KeyName
+
+  NodeImageId:
+    Description: AMI id for the node instances.
+    Type: AWS::EC2::Image::Id
+
+  NodeInstanceType:
+    Description: EC2 instance type for the node instances
+    Type: String
+
+  MinSize:
+    Description: Minimum size of Node Group ASG.
+    Type: Number
+
+  MaxSize:
+    Description: Maximum size of Node Group ASG.
+    Type: Number
+
+  StorageSize:
+    Description: Volume storage size in GB
+    Type: Number
+
+  ClusterName:
+    Description: The cluster name provided when the cluster was created. If it is incorrect, nodes will not be able to join the cluster.
+    Type: String
+
+  BootstrapArguments:
+    Description: Arguments to pass to the bootstrap script. See files/bootstrap.sh in https://github.com/awslabs/amazon-eks-ami
+    Type: String
+    Default: ""
+
+  NodeGroupName:
+    Description: Unique identifier for the Node Group.
+    Type: String
+
+  Subnets:
+    Description: The subnets where workers can be created.
+    Type: List<AWS::EC2::Subnet::Id>
+
+  NodeSecurityGroup:
+    Description: Worker Node Security Group 
+    Type: AWS::EC2::SecurityGroup::Id
+
+Resources:
+
+  NodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - !Ref NodeInstanceRole
+
+  NodeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+
+  NodeGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: !Ref MaxSize
+      LaunchConfigurationName: !Ref NodeLaunchConfig
+      MinSize: !Ref MinSize
+      MaxSize: !Ref MaxSize
+      VPCZoneIdentifier: !Ref Subnets
+      Tags:
+        - Key: Name
+          Value: !Sub "${ClusterName}-${NodeGroupName}-Node"
+          PropagateAtLaunch: 'true'
+        - Key: !Sub 'kubernetes.io/cluster/${ClusterName}'
+          Value: 'owned'
+          PropagateAtLaunch: 'true'
+        - Key: !Sub 'k8s.io/cluster-autoscaler/enabled'
+          Value: 'true'
+          PropagateAtLaunch: 'true'
+        - Key: !Sub 'k8s.io/cluster-autoscaler/${ClusterName}'
+          Value: 'true'
+          PropagateAtLaunch: 'true'
+        - Key: Application
+          Value: !Ref AppName
+          PropagateAtLaunch: 'true'
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: !Ref MinSize
+        MaxBatchSize: '1'
+        PauseTime: 'PT5M'
+
+  NodeLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: 'true' # TODO is this required by EKS?
+      IamInstanceProfile: !Ref NodeInstanceProfile
+      ImageId: !Ref NodeImageId
+      InstanceType: !Ref NodeInstanceType
+      KeyName: !Ref KeyName
+      SecurityGroups:
+      - !Ref NodeSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref StorageSize
+            VolumeType: gp2
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            set -o xtrace
+            /etc/eks/bootstrap.sh ${ClusterName} ${BootstrapArguments}
+            /opt/aws/bin/cfn-signal --exit-code $? --stack  ${AWS::StackName} --resource NodeGroup --region ${AWS::Region}
